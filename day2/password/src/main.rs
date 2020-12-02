@@ -20,13 +20,12 @@ fn check_pass(line: &str) -> bool {
 // also print out the valid password string
 // for question 2
 fn check_pass2(line: &str) -> bool {
-    let whole: Vec<&str> = line.split(' ').collect();
-    let range: Vec<&str> = whole[0].split('-').collect();
-    let first: usize = range[0].parse().unwrap();
-    let second: usize = range[1].parse().unwrap();
-    let first_c = whole[2].chars().nth(first - 1).unwrap();
-    let second_c = whole[2].chars().nth(second - 1).unwrap();
-    let ch: char = whole[1].chars().next().unwrap();
+    let whole: Vec<_> = line.split(|c| c == ' ' || c == ':' || c == '-').collect();
+    let first: usize = whole[0].parse().unwrap();
+    let second: usize = whole[1].parse().unwrap();
+    let first_c = whole[4].chars().nth(first - 1).unwrap();
+    let second_c = whole[4].chars().nth(second - 1).unwrap();
+    let ch: char = whole[2].chars().next().unwrap();
 
     if first_c == ch {
         if second_c != ch {
