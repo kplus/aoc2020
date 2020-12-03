@@ -1,8 +1,6 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-static STEP: usize = 3;
-
 // Get repeat pattern for a row
 // The pattern is the whole row, I am overthinking the question
 fn get_pattern(st: &str) -> usize {
@@ -28,26 +26,32 @@ fn main() -> std::io::Result<()> {
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 
+    const STRATAGE: [(usize, usize); 5] = [(1, 1), (3, 1), (5, 1), (7, 1), (1, 2)];
+
     let mut row_len = 0;
-    let mut pos = 0;
-    let mut trees = 0;
-    for line in contents.lines() {
-        if row_len == 0 {
-            row_len = line.len();
-            println!("The row is {} long.", row_len);
-        };
+    let mut mutiple: i64 = 1;
+    for (right, down) in STRATAGE.iter() {
+        let mut pos = 0;
+        let mut trees = 0;
+        for line in contents.lines().step_by(*down) {
+            if row_len == 0 {
+                row_len = line.len();
+                println!("The row is {} long.", row_len);
+            };
 
-        if pos > (row_len - 1) {
-            pos = jump(&line, pos, row_len);
+            if pos > (row_len - 1) {
+                pos = jump(&line, pos, row_len);
+            }
+            println!("The row is {}, and current postion is at {}", line, pos);
+            println!("the charactor is {}", line.chars().nth(pos).unwrap());
+            if line.chars().nth(pos).unwrap() == '#' {
+                trees += 1;
+            }
+            pos += right;
         }
-        println!("The row is {}, and current postion is at {}", line, pos);
-        println!("the charactor is {}", line.chars().nth(pos).unwrap());
-        if line.chars().nth(pos).unwrap() == '#' {
-            trees += 1;
-        }
-        pos += STEP;
+        println!("startge ({}, {}) entountered {} trees", right, down, trees);
+        mutiple *= trees
     }
-
-    println!("entountered {} trees", trees);
+    println!("result is {}", mutiple);
     Ok(())
 }
