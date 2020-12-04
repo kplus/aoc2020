@@ -15,8 +15,12 @@ struct ID {
 
 fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<ID>, Box<dyn Error>> {
     let input = fs::read_to_string(path)?;
-    println!("read in content:\n{}", input);
+    //println!("read in content:\n{}", input);
 
+    let persons: Vec<&str> = input.split("\n\n").collect();
+    for person in persons {
+        println!("read in peron details:\n{}", person);
+    }
     let id = ID {
         byr: String::from("0"),
         iyr: String::from("0"),
