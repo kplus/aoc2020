@@ -1,42 +1,33 @@
+use std::collections::HashMap;
 use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-struct ID {
-    byr: String, //Birth Year
-    iyr: String, //Issue Year
-    eyr: String, //Expiration Year
-    hgt: String, //Height
-    hcl: String, //Hair Color
-    ecl: String, //Eye Color
-    pid: String, //Passport ID
-    cid: String, //Country ID
+fn fill_hash(person: &str) -> HashMap<String, String> {
+    let mut details = HashMap::new();
+    for items in person.split(' ') {
+        let value: Vec<&str> = items.split(':').collect();
+        details.insert(value[0].to_string(), value[1].to_string());
+    }
+    details
 }
 
-fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<ID>, Box<dyn Error>> {
+fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>, Box<dyn Error>> {
     let input = fs::read_to_string(path)?;
     //println!("read in content:\n{}", input);
 
-    for person in input.split("\n\n") {
-        println!("read in peron details:\n{}", person);
-    }
-    let id = ID {
-        byr: String::from("0"),
-        iyr: String::from("0"),
-        eyr: String::from("0"),
-        hgt: String::from("0cm"),
-        hcl: String::from("#fffffd"),
-        ecl: String::from("gry"),
-        pid: String::from("0"),
-        cid: String::from("0"),
-    };
     let mut out = Vec::new();
-    out.push(id);
+    for person in input.split("\n\n") {
+        //    println!("read in peron details:\n{}", person);
+        out.push(fill_hash(person));
+    }
     Ok(out)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
+
+    println!("{:#?}", data);
 
     Ok(())
 }
