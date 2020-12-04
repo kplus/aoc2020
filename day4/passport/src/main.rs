@@ -17,8 +17,7 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<ID>, Box<dyn Error>> {
     let input = fs::read_to_string(path)?;
     //println!("read in content:\n{}", input);
 
-    let persons: Vec<&str> = input.split("\n\n").collect();
-    for person in persons {
+    for person in input.split("\n\n") {
         println!("read in peron details:\n{}", person);
     }
     let id = ID {
