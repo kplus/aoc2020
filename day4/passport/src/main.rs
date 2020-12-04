@@ -24,10 +24,22 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<HashMap<String, String>>, Bo
     Ok(out)
 }
 
+fn check(id: HashMap<String, String>) -> bool {
+    true
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
 
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
 
+    let mut count = 0;
+    for id in data {
+        if check(id) {
+            count += 1;
+        }
+    }
+
+    println!("There are {} valid IDs", count);
     Ok(())
 }
