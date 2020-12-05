@@ -59,7 +59,15 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
 
     Ok(v)
 }
-
+fn update_list(whole: &mut Vec<State>, id: usize) {
+    whole[id] = State::Occupied;
+    if whole[id - 1] == State::Unset {
+        whole[id - 1] = State::Possible;
+    }
+    if whole[id + 1] == State::Unset {
+        whole[id + 1] = State::Possible;
+    }
+}
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
@@ -74,13 +82,7 @@ fn main() -> Result<(), Box<dyn Error>> {
 
         // update list function
 
-        whole[seat_id] = State::Occupied;
-        if whole[seat_id - 1] == State::Unset {
-            whole[seat_id - 1] = State::Possible;
-        }
-        if whole[seat_id + 1] == State::Unset {
-            whole[seat_id + 1] = State::Possible;
-        }
+        update_list(&mut whole, seat_id);
     }
 
     for (i, s) in whole.iter().enumerate() {
