@@ -2,6 +2,13 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
+#[derive(Copy, Clone, PartialEq)]
+enum State {
+    Unset,    // unset state for a seat
+    Occupied, // occupied by other person
+    Possible, // possible seat for myself
+}
+
 fn get_num(s: &str) -> usize {
     let mut out = 0;
     match s.len() {
@@ -56,17 +63,30 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
-    let mut highest = 0;
 
+    const MAX: usize = 0x7F * 8 + 8;
+    println!("max list length is {}", MAX);
+    let mut whole = vec![State::Unset; MAX];
     for pass in data.iter() {
         let (row, col) = get_seat(pass);
         let seat_id = row * 8 + col;
-        //println!("seat id is {}", seat_id);
-        if seat_id > highest {
-            highest = seat_id;
+        println!("seat id is {}", seat_id);
+
+        // update list function
+
+        whole[seat_id] = State::Occupied;
+        if whole[seat_id - 1] == State::Unset {
+            whole[seat_id - 1] = State::Possible;
+        }
+        if whole[seat_id + 1] == State::Unset {
+            whole[seat_id + 1] = State::Possible;
         }
     }
 
-    println!("The highest seat ID is {}.", highest);
+    for (i, s) in whole.iter().enumerate() {
+        if *s == State::Possible {
+            println!("Find a possible postion {}", i);
+        }
+    }
     Ok(())
 }
