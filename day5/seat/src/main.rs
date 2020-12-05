@@ -59,6 +59,10 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
 
     Ok(v)
 }
+
+// When a new seat ID is found from list, this position is
+// occupied by somebody else. It also makes the 2 seats next
+// to it possible to be mine
 fn update_list(whole: &mut Vec<State>, id: usize) {
     whole[id] = State::Occupied;
     if whole[id - 1] == State::Unset {
@@ -68,27 +72,36 @@ fn update_list(whole: &mut Vec<State>, id: usize) {
         whole[id + 1] = State::Possible;
     }
 }
+
+fn finalize_list(whole: Vec<State>) {
+    let mut valid: Vec<usize> = Vec::new();
+
+    for (i, s) in whole.iter().enumerate() {
+        if *s == State::Possible {
+            //println!("Find a possible postion {}", i);
+            valid.push(i);
+        }
+    }
+    let l = valid.len();
+    println!("Found {} possible values.", l);
+    if l > 0 {
+        println!("The middle value is {}", valid[l / 2]);
+    }
+}
+
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
 
     const MAX: usize = 0x7F * 8 + 8;
-    println!("max list length is {}", MAX);
     let mut whole = vec![State::Unset; MAX];
     for pass in data.iter() {
         let (row, col) = get_seat(pass);
         let seat_id = row * 8 + col;
-        println!("seat id is {}", seat_id);
-
-        // update list function
-
+        //println!("seat id is {}", seat_id);
         update_list(&mut whole, seat_id);
     }
 
-    for (i, s) in whole.iter().enumerate() {
-        if *s == State::Possible {
-            println!("Find a possible postion {}", i);
-        }
-    }
+    finalize_list(whole);
     Ok(())
 }
