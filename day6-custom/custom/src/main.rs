@@ -15,11 +15,22 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
     }
     Ok(out)
 }
+fn count_yes(s: String) -> usize {
+    let mut list: Vec<char> = s.split_whitespace().collect::<String>().chars().collect();
+    list.sort();
+    list.dedup();
+    //println!("sorted list is {:#?}", list);
 
+    list.len()
+}
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
 
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
 
+    for group in data {
+        let y = count_yes(group);
+        println!("There are {} yes in this group", y);
+    }
     Ok(())
 }
