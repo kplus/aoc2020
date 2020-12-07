@@ -30,7 +30,7 @@ fn get_relation(s: &str, bt: &HashMap<String, BAG>) -> (String, Vec<String>) {
     let mut v = Vec::new();
     v.push("1".to_string());
 
-    println!("bags are {:#?}", bags);
+    //println!("bags are {:#?}", bags);
 
     (bag, v)
 }
@@ -39,6 +39,7 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
     let mut bag_tree = HashMap::new();
 
     for bags in s.iter() {
+        println!("The bag line is {}", bags);
         let (bag, children) = get_relation(bags, &bag_tree);
         let new_bags = BAG::new(bag.as_str());
         bag_tree.insert(bag, new_bags);
