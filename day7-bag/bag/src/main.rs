@@ -3,7 +3,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct BAG {
     name: String,
     father: Vec<String>,
@@ -65,10 +65,18 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
     let mut tree = HashMap::new();
 
     for bags in s.iter() {
-        println!("The bag line is {}", bags);
+        //println!("The bag line is {}", bags);
         let (bag, children_list) = parse_bag(bags);
+
         //println!("The children list for bag {} is {:#?}", bag, children_list);
-        let mut new_bags = BAG::new(bag.as_str());
+
+        // to_owned is esstential, otherwise tree will be
+        // mutbale borrowed twice, which is not allowed
+        let mut new_bags = tree
+            .entry(bag.to_owned())
+            .or_insert_with(|| BAG::new(bag.as_str()))
+            .to_owned();
+
         for child in children_list {
             if child != "no other" {
                 new_bags.add_child(child, &mut tree);
@@ -93,12 +101,24 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(out)
 }
 
+// Recursion function to get father and upper layers
+fn count_father_iter(s: String, tree: &HashMap<String, BAG>, v: &mut Vec<String>) {
+    for father in tree.get(&s).unwrap().father.to_owned() {
+        v.push(father.to_owned());
+        count_father_iter(father, &tree, v);
+    }
+}
 //todo: Get the number of bags which can contain the specified bag
-// [in]     The bag tree
 // [in]     The target bag name
+// [in]     The bag tree
 // [out]    Number of possible bags, or None if target bag name is invalid
-fn get_containers(_s: &str, _tree: HashMap<String, BAG>) -> Option<usize> {
-    Some(0)
+fn get_containers(s: &str, tree: HashMap<String, BAG>) -> Option<usize> {
+    let mut v: Vec<String> = Vec::new();
+    let s = s.to_string();
+    count_father_iter(s, &tree, &mut v);
+    let count = v.len();
+    println!("The count before return is {}", count);
+    Some(count)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -106,7 +126,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //println!("{:#?}", data);
     let bag_name = "shiny gold";
     let bag_tree = build_tree(data);
-    //println!("bag tree built is {:#?}", bag_tree);
+    println!("bag tree built is {:#?}", bag_tree);
 
     let count = get_containers(bag_name, bag_tree);
     match count {
