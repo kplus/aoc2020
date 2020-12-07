@@ -37,20 +37,24 @@ impl BAG {
     }
 }
 
-// todo: Parse the input string
+// Parse the input string
 // [in]     String for single bag info
 // [out]    Name of current bag, and array of children bags
 
 fn parse_bag(s: &str) -> (String, Vec<String>) {
-    let bags: Vec<&str> = s.split("bag").collect();
+    let bags: Vec<&str> = s
+        .split(' ')
+        .filter(|&x| !x.contains("bag") && !x.contains("contain") && !x.contains(char::is_numeric))
+        .collect();
     //println!("bags are {:#?}", bags);
 
-    let bag = "me".to_string();
-    let mut v = Vec::new();
-    v.push("li".to_string());
-    v.push("wo".to_string());
-    v.push("ta".to_string());
-    (bag, v)
+    let bag = bags[0..2].join(" ");
+
+    let mut child_bags = Vec::new();
+    for (pos, _color) in bags.iter().enumerate().skip(2).step_by(2) {
+        child_bags.push(bags[pos..(pos + 2)].join(" "));
+    }
+    (bag, child_bags)
 }
 
 // Build the bag tree
@@ -66,7 +70,9 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
         //println!("The children list for bag {} is {:#?}", bag, children_list);
         let mut new_bags = BAG::new(bag.as_str());
         for child in children_list {
-            new_bags.add_child(child, &mut tree);
+            if child != "no other" {
+                new_bags.add_child(child, &mut tree);
+            }
         }
         tree.insert(bag, new_bags);
     }
@@ -91,7 +97,7 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
 // [in]     The bag tree
 // [in]     The target bag name
 // [out]    Number of possible bags, or None if target bag name is invalid
-fn get_containers(s: &str, tree: HashMap<String, BAG>) -> Option<usize> {
+fn get_containers(_s: &str, _tree: HashMap<String, BAG>) -> Option<usize> {
     Some(0)
 }
 
@@ -100,7 +106,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     //println!("{:#?}", data);
     let bag_name = "shiny gold";
     let bag_tree = build_tree(data);
-    println!("bag tree built is {:#?}", bag_tree);
+    //println!("bag tree built is {:#?}", bag_tree);
 
     let count = get_containers(bag_name, bag_tree);
     match count {
