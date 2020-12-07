@@ -7,7 +7,7 @@ use std::path::Path;
 struct BAG {
     name: String,
     father: Vec<String>,
-    child: Vec<String>,
+    child: Vec<(usize, String)>,
 }
 
 impl BAG {
@@ -26,11 +26,11 @@ impl BAG {
     // [in]     Child bag string name to be added
     // [in]     The whole hashmap tree for bags
     // [out]    Updated BAG objects for both self and child
-    fn add_child(&mut self, s: String, tree: &mut HashMap<String, BAG>) {
-        self.child.push(s.to_owned());
+    fn add_child(&mut self, v: (usize, String), tree: &mut HashMap<String, BAG>) {
+        self.child.push(v.to_owned());
         let child = tree
-            .entry(s.to_owned())
-            .or_insert_with(|| BAG::new(s.as_str()));
+            .entry(v.1.to_owned())
+            .or_insert_with(|| BAG::new(v.1.as_str()));
         if !child.father.contains(&self.name) {
             child.father.push(self.name.to_owned());
         }
@@ -41,18 +41,21 @@ impl BAG {
 // [in]     String for single bag info
 // [out]    Name of current bag, and array of children bags
 
-fn parse_bag(s: &str) -> (String, Vec<String>) {
+fn parse_bag(s: &str) -> (String, Vec<(usize, String)>) {
     let bags: Vec<&str> = s
         .split(' ')
-        .filter(|&x| !x.contains("bag") && !x.contains("contain") && !x.contains(char::is_numeric))
+        .filter(|&x| !x.contains("bag") && !x.contains("contain"))
         .collect();
     //println!("bags are {:#?}", bags);
 
     let bag = bags[0..2].join(" ");
 
     let mut child_bags = Vec::new();
-    for (pos, _color) in bags.iter().enumerate().skip(2).step_by(2) {
-        child_bags.push(bags[pos..(pos + 2)].join(" "));
+    for (pos, num) in bags.iter().enumerate().skip(2).step_by(3) {
+        match num.parse::<usize>() {
+            Ok(x) => child_bags.push((x, bags[(pos + 1)..(pos + 3)].join(" "))),
+            _ => child_bags.push((0, bags[pos..(pos + 2)].join(" "))),
+        }
     }
     (bag, child_bags)
 }
@@ -78,7 +81,7 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
             .to_owned();
 
         for child in children_list {
-            if child != "no other" {
+            if child.1 != "no other" {
                 new_bags.add_child(child, &mut tree);
             }
         }
