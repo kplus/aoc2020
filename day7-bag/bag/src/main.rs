@@ -5,23 +5,35 @@ use std::path::Path;
 
 #[derive(Debug)]
 struct BAG {
-    //    name: String,
+    name: String,
     father: Vec<String>,
     child: Vec<String>,
 }
 
 impl BAG {
-    const fn new(s: &str) -> Self {
+    // Create a new BAG object with empty father/chlid list
+    fn new(s: &str) -> Self {
         BAG {
-            //name: s.to_string(),
+            name: s.to_string(),
             father: Vec::new(),
             child: Vec::new(),
         }
     }
 
-    fn add_child(&mut self, s: String) {
-        self.child.push(s);
-        //todo: add function to link father
+    // Add a child objec to the list, also add self into
+    // child's father list.
+    // If child object doesn't exist, create one with empty lists
+    // [in]     Child bag string name to be added
+    // [in]     The whole hashmap tree for bags
+    // [out]    Updated BAG objects for both self and child
+    fn add_child(&mut self, s: String, tree: &mut HashMap<String, BAG>) {
+        self.child.push(s.to_owned());
+        let child = tree
+            .entry(s.to_owned())
+            .or_insert_with(|| BAG::new(s.as_str()));
+        if !child.father.contains(&self.name) {
+            child.father.push(self.name.to_owned());
+        }
     }
 }
 
@@ -35,11 +47,13 @@ fn parse_bag(s: &str) -> (String, Vec<String>) {
 
     let bag = "me".to_string();
     let mut v = Vec::new();
-    v.push("1".to_string());
+    v.push("li".to_string());
+    v.push("wo".to_string());
+    v.push("ta".to_string());
     (bag, v)
 }
 
-// doing: Build the bag tree
+// Build the bag tree
 // [in]     String array contains each line of the bags
 // [out]    Hashmap for all bags with bag name as key,
 //          and BAG struct as value
@@ -49,8 +63,11 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
     for bags in s.iter() {
         println!("The bag line is {}", bags);
         let (bag, children_list) = parse_bag(bags);
-        println!("The children list for bag {} is {:#?}", bag, children_list);
-        let new_bags = BAG::new(bag.as_str());
+        //println!("The children list for bag {} is {:#?}", bag, children_list);
+        let mut new_bags = BAG::new(bag.as_str());
+        for child in children_list {
+            new_bags.add_child(child, &mut tree);
+        }
         tree.insert(bag, new_bags);
     }
     tree
