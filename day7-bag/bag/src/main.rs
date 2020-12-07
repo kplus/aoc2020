@@ -25,7 +25,11 @@ impl BAG {
     }
 }
 
-fn get_relation(s: &str, bt: &HashMap<String, BAG>) -> (String, Vec<String>) {
+// todo: Parse the input string
+// [in]     String for single bag info
+// [out]    Name of current bag, and array of children bags
+
+fn parse_bag(s: &str) -> (String, Vec<String>) {
     let bags: Vec<&str> = s.split("bag").collect();
     //println!("bags are {:#?}", bags);
 
@@ -35,12 +39,17 @@ fn get_relation(s: &str, bt: &HashMap<String, BAG>) -> (String, Vec<String>) {
     (bag, v)
 }
 
+// doing: Build the bag tree
+// [in]     String array contains each line of the bags
+// [out]    Hashmap for all bags with bag name as key,
+//          and BAG struct as value
 fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
     let mut tree = HashMap::new();
 
     for bags in s.iter() {
         println!("The bag line is {}", bags);
-        let (bag, children) = get_relation(bags, &tree);
+        let (bag, children_list) = parse_bag(bags);
+        println!("The children list for bag {} is {:#?}", bag, children_list);
         let new_bags = BAG::new(bag.as_str());
         tree.insert(bag, new_bags);
     }
