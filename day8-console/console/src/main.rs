@@ -2,21 +2,23 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 enum Instr {
     nop, //No OPeration - it does nothing
     acc, //increases or decreases accumulator
     jmp, //jumps to a new instruction relative to itself
 }
-#[derive(Debug)]
+
+#[derive(Debug, Clone)]
 struct Command {
     executed: bool,
     ins: Instr,
     parameter: i16,
 }
+
 #[derive(Debug)]
 struct ConsoleProm {
-    accum: usize,
+    accum: i16,
     pos: usize,
     program: Vec<Command>,
 }
@@ -39,6 +41,29 @@ impl Command {
             parameter,
         }
     }
+
+    // Execute the command
+    fn execute(&self, prom: &mut ConsoleProm) {
+        prom.set_flag();
+        match self.ins {
+            Instr::acc => {
+                prom.accum += self.parameter;
+                prom.pos += 1;
+            }
+            Instr::nop => {
+                prom.pos += 1;
+            }
+            Instr::jmp => {
+                let mut pos = prom.pos as i16;
+                pos += self.parameter;
+                if pos > 0 {
+                    prom.pos = pos as usize;
+                } else {
+                    eprintln!("Error: pos changed to {}", pos);
+                }
+            }
+        }
+    }
 }
 
 impl ConsoleProm {
@@ -57,26 +82,36 @@ impl ConsoleProm {
         prom
     }
 
-    //TODO: Check if the command has been reached twice
+    // Check if the command has been reached twice
     fn meet_twice(&self) -> bool {
-        true
+        self.program[self.pos].executed
     }
 
-    //TODO: Execute the instruction pointed by pos
-    fn execute(&mut self) {}
+    //TODO: Run the program
+    fn run(&mut self) {
+        let pos = self.pos;
+        let command = self.program[pos].to_owned();
+        command.execute(self)
+    }
 
-    //TODO: Get the current accumlator
-    fn get_accumlator(&self) -> usize {
-        8
+    // Get the current accumlator
+    fn get_accumlator(&self) -> i16 {
+        self.accum
+    }
+
+    // Set current command to be executed
+    fn set_flag(&mut self) {
+        self.program[self.pos].executed = true;
     }
 }
 
 // Find the first time program get into infinite loop
 // [in]     ConsoleProgram to analayse
 // [out]    Value of accumlator
-fn find_loop(prog: &mut ConsoleProm) -> usize {
+fn find_loop(mut prog: ConsoleProm) -> i16 {
     while !prog.meet_twice() {
-        prog.execute();
+        //        println!("haven't meet twice, carry on running");
+        prog.run();
     }
     prog.get_accumlator()
 }
@@ -97,9 +132,9 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
-    let mut console_program = ConsoleProm::new(data);
+    let console_program = ConsoleProm::new(data);
     println!("CP is {:#?}", console_program);
-    let out = find_loop(&mut console_program);
+    let out = find_loop(console_program);
     println!(
         "The accuulator is {} when entering loop for first time.",
         out
