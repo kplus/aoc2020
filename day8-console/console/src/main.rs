@@ -16,7 +16,7 @@ struct Command {
     parameter: i16,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone)]
 struct ConsoleProm {
     accum: i16,
     pos: usize,
@@ -132,61 +132,37 @@ impl ConsoleProm {
     }
 }
 
-// Find the first time program get into infinite loop
+// Run program until hit infinite loop or end
 // [in]     ConsoleProgram to analayse
-// [out]    Value of accumlator
-fn find_end(prog: &mut ConsoleProm, lines: usize) -> usize {
+fn find_end(mut prog: ConsoleProm, lines: usize) -> (usize, i16) {
     while prog.get_pos() < lines && !prog.meet_twice() {
-        println!(
-            "haven't meet twice, carry on running, position is {},  acc is {},line is {}",
-            prog.get_pos(),
-            prog.get_accumlator(),
-            lines
-        );
+        //println!(
+        //    "haven't meet twice, carry on running, position is {},  acc is {},line is {}",
+        //    prog.get_pos(),
+        //    prog.get_accumlator(),
+        //    lines
+        //);
         prog.run();
     }
-    prog.get_pos()
+    (prog.get_pos(), prog.get_accumlator())
 }
 
-struct Cache {
-    pos: usize,
-    acc: i16,
-}
-
-// Reset pos and accumlator to cached value, also call swap function
-// [in]     Cache structure cached the pos and acc to return to
-fn reset_pos(cache: &Cache, prog: &mut ConsoleProm) {
-    prog.pos = cache.pos;
-    prog.accum = cache.acc;
-    prog.swap();
-}
 // Find the position where jmp or nop should be swapped, so that
 // the program can run to the end
 // [in]     ConsoleProgram to analayse
 // [out]    Value of accumlator
 fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
-    let mut cache = Cache { pos: 0, acc: 0 };
     while prog.get_pos() != lines {
-        let mut check = false;
-        println!(
-            "The pos is {}, acc is {}, line is {}",
-            cache.pos, cache.acc, lines
-        );
         if prog.get_instr(prog.get_pos()) != Instr::Acc {
-            check = true;
+            let mut test_prom = prog.to_owned();
+            test_prom.swap();
+            let (pos, acc) = find_end(test_prom, lines);
+            //println!("hitted end position is {}", pos);
+            if pos == lines {
+                return acc;
+            }
         }
         prog.run();
-        if check {
-            let tmp_pos = prog.get_pos();
-            let tmp_acc = prog.get_accumlator();
-            println!("after run once, pos is {}, acc is {}", tmp_pos, tmp_acc);
-            reset_pos(&cache, &mut prog);
-            cache = Cache {
-                pos: tmp_pos,
-                acc: tmp_acc,
-            };
-            find_end(&mut prog, lines);
-        }
     }
     prog.get_accumlator()
 }
@@ -209,7 +185,7 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     let lines = data.len();
     //println!("{:#?}", data);
-    let mut console_program = ConsoleProm::new(data);
+    let console_program = ConsoleProm::new(data);
     //println!("CP is {:#?}", console_program);
     //find_end(&mut console_program, lines);
     //let out = console_program.get_accumlator();
