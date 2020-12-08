@@ -137,7 +137,6 @@ fn find_loop(prog: &mut ConsoleProm, lines: usize) -> usize {
         prog.run();
     }
     prog.get_pos()
-    // prog.get_accumlator()
 }
 
 struct Cache {
@@ -192,10 +191,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     let lines = data.len();
     //println!("{:#?}", data);
-    let console_program = ConsoleProm::new(data);
+    let mut console_program = ConsoleProm::new(data);
     //println!("CP is {:#?}", console_program);
-    //let out = find_loop(console_program);
-    let out = find_bug(console_program, lines);
+    find_loop(&mut console_program, lines);
+    let out = console_program.get_accumlator();
+    //let out = find_bug(console_program, lines);
     println!("The accuulator is {}", out);
     Ok(())
 }
