@@ -131,7 +131,7 @@ impl ConsoleProm {
 // Find the first time program get into infinite loop
 // [in]     ConsoleProgram to analayse
 // [out]    Value of accumlator
-fn find_loop(prog: &mut ConsoleProm, lines: usize) -> usize {
+fn find_end(prog: &mut ConsoleProm, lines: usize) -> usize {
     while prog.get_pos() < lines && !prog.meet_twice() {
         println!(
             "haven't meet twice, carry on running, position is {},  acc is {},line is {}",
@@ -179,7 +179,7 @@ fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
                 pos: tmp_pos,
                 acc: tmp_acc,
             };
-            pos = find_loop(&mut prog, lines);
+            pos = find_end(&mut prog, lines);
         }
     }
     prog.get_accumlator()
@@ -198,14 +198,14 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(out)
 }
 
-// Question 1 uses find_loop, and question 2 uses find_bug
+// Question 1 uses find_end, and question 2 uses find_bug
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     let lines = data.len();
     //println!("{:#?}", data);
     let mut console_program = ConsoleProm::new(data);
     //println!("CP is {:#?}", console_program);
-    //find_loop(&mut console_program, lines);
+    //find_end(&mut console_program, lines);
     //let out = console_program.get_accumlator();
     let out = find_bug(console_program, lines);
     println!("The accuulator is {}", out);
