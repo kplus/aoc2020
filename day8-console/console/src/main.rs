@@ -4,9 +4,9 @@ use std::path::Path;
 
 #[derive(Debug, Clone)]
 enum Instr {
-    nop, //No OPeration - it does nothing
-    acc, //increases or decreases accumulator
-    jmp, //jumps to a new instruction relative to itself
+    Nop, //No OPeration - it does nothing
+    Acc, //increases or decreases accumulator
+    Jmp, //jumps to a new instruction relative to itself
 }
 
 #[derive(Debug, Clone)]
@@ -25,9 +25,9 @@ struct ConsoleProm {
 impl Instr {
     fn from_str(st: &str) -> Self {
         match st {
-            "nop" => Instr::nop,
-            "acc" => Instr::acc,
-            "jmp" => Instr::jmp,
+            "nop" => Instr::Nop,
+            "acc" => Instr::Acc,
+            "jmp" => Instr::Jmp,
             _ => panic!(),
         }
     }
@@ -46,22 +46,30 @@ impl Command {
     fn execute(&self, prom: &mut ConsoleProm) {
         prom.set_flag();
         match self.ins {
-            Instr::acc => {
+            Instr::Acc => {
                 prom.accum += self.parameter;
                 prom.pos += 1;
             }
-            Instr::nop => {
+            Instr::Nop => {
                 prom.pos += 1;
             }
-            Instr::jmp => {
+            Instr::Jmp => {
                 let mut pos = prom.pos as i16;
                 pos += self.parameter;
-                if pos > 0 {
+                if pos >= 0 {
                     prom.pos = pos as usize;
                 } else {
                     eprintln!("Error: pos changed to {}", pos);
                 }
             }
+        }
+    }
+
+    fn swap(&mut self) {
+        match self.ins {
+            Instr::Nop => self.ins = Instr::Jmp,
+            Instr::Jmp => self.ins = Instr::Nop,
+            Instr::Acc => println!("acc command doesn't need to swap"),
         }
     }
 }
@@ -87,11 +95,11 @@ impl ConsoleProm {
         self.program[self.pos].executed
     }
 
-    //TODO: Run the program
+    // Run the program
     fn run(&mut self) {
         let pos = self.pos;
         let command = self.program[pos].to_owned();
-        command.execute(self)
+        command.execute(self);
     }
 
     // Get the current accumlator
@@ -99,19 +107,69 @@ impl ConsoleProm {
         self.accum
     }
 
+    // Get the current accumlator
+    fn get_pos(&self) -> usize {
+        self.pos
+    }
+
     // Set current command to be executed
     fn set_flag(&mut self) {
         self.program[self.pos].executed = true;
+    }
+
+    // Swap instruction
+    fn swap(&mut self) {
+        self.program[self.pos].swap();
     }
 }
 
 // Find the first time program get into infinite loop
 // [in]     ConsoleProgram to analayse
 // [out]    Value of accumlator
-fn find_loop(mut prog: ConsoleProm) -> i16 {
-    while !prog.meet_twice() {
-        //        println!("haven't meet twice, carry on running");
+fn find_loop(prog: &mut ConsoleProm, lines: usize) -> usize {
+    while prog.get_pos() < lines && !prog.meet_twice() {
+        println!(
+            "haven't meet twice, carry on running, position is {},  acc is {},line is {}",
+            prog.get_pos(),
+            prog.get_accumlator(),
+            lines
+        );
         prog.run();
+    }
+    prog.get_pos()
+    // prog.get_accumlator()
+}
+
+struct Cache {
+    pos: usize,
+    acc: i16,
+}
+
+// Reset pos and accumlator to cached value, also call swap function
+// [in]     Cache structure cached the pos and acc to return to
+fn reset_pos(cache: &mut Cache, mut prog: &mut ConsoleProm) {
+    prog.pos = cache.pos;
+    prog.accum = cache.acc;
+    prog.swap();
+}
+// Doing: Find the position where jmp or nop should be swapped, so that
+// the program can run to the end
+// [in]     ConsoleProgram to analayse
+// [out]    Value of accumlator
+fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
+    let mut cache = Cache { pos: 0, acc: 0 };
+    let mut pos = 0;
+    while pos != lines {
+        println!("The pos is {}, acc is {}", cache.pos, cache.acc);
+        prog.run();
+        let tmp_pos = prog.get_pos();
+        let tmp_acc = prog.get_accumlator();
+        reset_pos(&mut cache, &mut prog);
+        cache = Cache {
+            pos: tmp_pos,
+            acc: tmp_acc,
+        };
+        pos = find_loop(&mut prog, lines);
     }
     prog.get_accumlator()
 }
@@ -129,15 +187,15 @@ fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
     Ok(out)
 }
 
+// Question 1 uses find_loop, and question 2 uses find_bug
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
+    let lines = data.len();
     //println!("{:#?}", data);
     let console_program = ConsoleProm::new(data);
-    println!("CP is {:#?}", console_program);
-    let out = find_loop(console_program);
-    println!(
-        "The accuulator is {} when entering loop for first time.",
-        out
-    );
+    //println!("CP is {:#?}", console_program);
+    //let out = find_loop(console_program);
+    let out = find_bug(console_program, lines);
+    println!("The accuulator is {}", out);
     Ok(())
 }
