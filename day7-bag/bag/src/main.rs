@@ -111,11 +111,12 @@ fn count_father_iter(s: String, tree: &HashMap<String, BAG>, v: &mut Vec<String>
         count_father_iter(father, &tree, v);
     }
 }
-//todo: Get the number of bags which can contain the specified bag
+
+// Get the number of bags which can contain the specified bag
 // [in]     The target bag name
 // [in]     The bag tree
 // [out]    Number of possible bags
-fn get_containers(s: &str, tree: HashMap<String, BAG>) -> usize {
+fn _get_containers(s: &str, tree: HashMap<String, BAG>) -> usize {
     let mut v: Vec<String> = Vec::new();
     let s = s.to_string();
     count_father_iter(s, &tree, &mut v);
@@ -124,6 +125,23 @@ fn get_containers(s: &str, tree: HashMap<String, BAG>) -> usize {
     v.len()
 }
 
+// Get the number of bags which contains by the specified bag
+// [in]     The target bag name
+// [in]     The bag tree
+// [out]    Number of all bags
+fn get_all_child_bags(s: &str, tree: &HashMap<String, BAG>) -> usize {
+    let mut count = 1;
+
+    for child in tree.get(s).unwrap().child.to_owned() {
+        if child.0 != 0 {
+            count += child.0 * get_all_child_bags(child.1.as_str(), &tree);
+        }
+    }
+    count
+}
+
+// Question 1 uses get_containers, and question 2 uses
+// get_all_bags
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
@@ -131,15 +149,19 @@ fn main() -> Result<(), Box<dyn Error>> {
     let bag_tree = build_tree(data);
     //println!("bag tree built is {:#?}", bag_tree);
 
-    let count = get_containers(bag_name, bag_tree);
+    //let count = get_containers(bag_name, bag_tree);
+    let count = get_all_child_bags(bag_name, &bag_tree);
     match count {
         0 => eprintln!(
             "No bag name {} found, please check your input file.",
             bag_name
         ),
         x => println!(
-            "There are {} bags that can contain at least 1 {}",
-            x, bag_name
+            //            "There are {} bags that can contain at least 1 {}",
+            //            x, bag_name
+            "There are {} contains {} bags",
+            bag_name,
+            x - 1
         ),
     }
     Ok(())
