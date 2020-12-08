@@ -2,7 +2,7 @@ use std::error::Error;
 use std::fs;
 use std::path::Path;
 
-#[derive(Debug, Clone)]
+#[derive(Debug, Clone, PartialEq)]
 enum Instr {
     Nop, //No OPeration - it does nothing
     Acc, //increases or decreases accumulator
@@ -121,6 +121,11 @@ impl ConsoleProm {
     fn swap(&mut self) {
         self.program[self.pos].swap();
     }
+
+    //todo: get instruction
+    fn get_instr(&self, pos: usize) -> Instr {
+        Instr::Acc
+    }
 }
 
 // Find the first time program get into infinite loop
@@ -146,12 +151,12 @@ struct Cache {
 
 // Reset pos and accumlator to cached value, also call swap function
 // [in]     Cache structure cached the pos and acc to return to
-fn reset_pos(cache: &mut Cache, mut prog: &mut ConsoleProm) {
+fn reset_pos(cache: &Cache, prog: &mut ConsoleProm) {
     prog.pos = cache.pos;
     prog.accum = cache.acc;
     prog.swap();
 }
-// Doing: Find the position where jmp or nop should be swapped, so that
+// Find the position where jmp or nop should be swapped, so that
 // the program can run to the end
 // [in]     ConsoleProgram to analayse
 // [out]    Value of accumlator
@@ -159,16 +164,23 @@ fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
     let mut cache = Cache { pos: 0, acc: 0 };
     let mut pos = 0;
     while pos != lines {
+        let mut check = false;
         println!("The pos is {}, acc is {}", cache.pos, cache.acc);
+        if prog.get_instr(cache.pos) != Instr::Acc {
+            check = true;
+        }
         prog.run();
-        let tmp_pos = prog.get_pos();
-        let tmp_acc = prog.get_accumlator();
-        reset_pos(&mut cache, &mut prog);
-        cache = Cache {
-            pos: tmp_pos,
-            acc: tmp_acc,
-        };
-        pos = find_loop(&mut prog, lines);
+        if check {
+            let tmp_pos = prog.get_pos();
+            let tmp_acc = prog.get_accumlator();
+            println!("after run once, pos is {}, acc is {}", tmp_pos, tmp_acc);
+            reset_pos(&cache, &mut prog);
+            cache = Cache {
+                pos: tmp_pos,
+                acc: tmp_acc,
+            };
+            pos = find_loop(&mut prog, lines);
+        }
     }
     prog.get_accumlator()
 }
@@ -193,9 +205,9 @@ fn main() -> Result<(), Box<dyn Error>> {
     //println!("{:#?}", data);
     let mut console_program = ConsoleProm::new(data);
     //println!("CP is {:#?}", console_program);
-    find_loop(&mut console_program, lines);
-    let out = console_program.get_accumlator();
-    //let out = find_bug(console_program, lines);
+    //find_loop(&mut console_program, lines);
+    //let out = console_program.get_accumlator();
+    let out = find_bug(console_program, lines);
     println!("The accuulator is {}", out);
     Ok(())
 }
