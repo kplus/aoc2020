@@ -72,6 +72,10 @@ impl Command {
             Instr::Acc => println!("acc command doesn't need to swap"),
         }
     }
+
+    fn get_instr(&self) -> Instr {
+        self.ins.to_owned()
+    }
 }
 
 impl ConsoleProm {
@@ -122,9 +126,9 @@ impl ConsoleProm {
         self.program[self.pos].swap();
     }
 
-    //todo: get instruction
+    // get instruction
     fn get_instr(&self, pos: usize) -> Instr {
-        Instr::Acc
+        self.program[pos].get_instr()
     }
 }
 
@@ -166,7 +170,7 @@ fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
     while pos != lines {
         let mut check = false;
         println!("The pos is {}, acc is {}", cache.pos, cache.acc);
-        if prog.get_instr(cache.pos) != Instr::Acc {
+        if prog.get_instr(prog.get_pos()) != Instr::Acc {
             check = true;
         }
         prog.run();
