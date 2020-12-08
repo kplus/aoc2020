@@ -166,10 +166,12 @@ fn reset_pos(cache: &Cache, prog: &mut ConsoleProm) {
 // [out]    Value of accumlator
 fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
     let mut cache = Cache { pos: 0, acc: 0 };
-    let mut pos = 0;
-    while pos != lines {
+    while prog.get_pos() != lines {
         let mut check = false;
-        println!("The pos is {}, acc is {}", cache.pos, cache.acc);
+        println!(
+            "The pos is {}, acc is {}, line is {}",
+            cache.pos, cache.acc, lines
+        );
         if prog.get_instr(prog.get_pos()) != Instr::Acc {
             check = true;
         }
@@ -183,7 +185,7 @@ fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
                 pos: tmp_pos,
                 acc: tmp_acc,
             };
-            pos = find_end(&mut prog, lines);
+            find_end(&mut prog, lines);
         }
     }
     prog.get_accumlator()
