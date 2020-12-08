@@ -58,6 +58,13 @@ impl ConsoleProm {
     }
 }
 
+//TODO: Find the first time program get into infinite loop
+// [in]     ConsoleProgram to analayse
+// [out]    Value of accumlator
+fn find_loop(prog: ConsoleProm) -> usize {
+    7
+}
+
 // [in]     Path of file to read details from
 // [out     Arrary of String for each lines
 fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
@@ -75,6 +82,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     println!("{:#?}", data);
     let console_program = ConsoleProm::new(data);
-    println!("CP is {:#?}", console_program);
+    //println!("CP is {:#?}", console_program);
+    let out = find_loop(console_program);
+    println!(
+        "The accuulator is {} when entering loop for first time.",
+        out
+    );
     Ok(())
 }
