@@ -1,11 +1,12 @@
 use std::error::Error;
 use std::fs;
 use std::path::Path;
+fn question2(target: usize, whole_array: &[usize]) {
+    println!("target is {}, whole array is {:#?}", target, whole_array);
+}
 
-fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+fn question1(whole_array: &[usize]) -> Result<usize, &'static str> {
     const PREAMBLE: usize = 25;
-    let whole_array: Vec<usize> = data.iter().map(|s| s.parse::<usize>().unwrap()).collect();
-    //println!("The whole array is {:#?}", whole_array);
     let check = &whole_array[PREAMBLE..];
     'next_num: for (i, &num) in check.iter().enumerate() {
         let preamble = &whole_array[i..i + PREAMBLE];
@@ -45,9 +46,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file("../input.txt")?;
     //println!("{:#?}", data);
 
-    match question1(data) {
-        Ok(x) => println!("The result is {}", x),
+    let whole_array: Vec<usize> = data.iter().map(|s| s.parse::<usize>().unwrap()).collect();
+    //println!("The whole array is {:#?}", whole_array);
+    let mut target = 0;
+    match question1(&whole_array) {
+        Ok(x) => {
+            println!("The result is {}", x);
+            target = x;
+        }
         Err(x) => println!("Error processing the input data: {:?}", x),
     };
+
+    question2(target, &whole_array);
     Ok(())
 }
