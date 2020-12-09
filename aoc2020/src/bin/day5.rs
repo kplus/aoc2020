@@ -1,6 +1,6 @@
 use std::error::Error;
-use std::fs;
-use std::path::Path;
+
+use aoc2020::*;
 
 #[derive(Copy, Clone, PartialEq)]
 enum State {
@@ -45,21 +45,6 @@ fn get_seat(seat: &str) -> (usize, usize) {
     (get_num(row_str), get_num(col_str))
 }
 
-// [in]     Path of file to read boarding passes from
-// [out     Arrary of String, each String is a boarding ID
-fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
-    let input = fs::read_to_string(path)?;
-    //    println!("read in content:\n{}", input);
-
-    let mut v: Vec<String> = Vec::new();
-
-    for line in input.lines() {
-        v.push(line.to_string());
-    }
-
-    Ok(v)
-}
-
 // When a new seat ID is found from list, this position is
 // occupied by somebody else. It also makes the 2 seats next
 // to it possible to be mine
@@ -90,7 +75,7 @@ fn finalize_list(whole: Vec<State>) {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file()?;
     //println!("{:#?}", data);
 
     const MAX: usize = 0x7F * 8 + 8;

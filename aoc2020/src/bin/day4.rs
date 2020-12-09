@@ -164,7 +164,7 @@ fn check(id: HashMap<String, String>) -> bool {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file("../inputs/day4")?;
 
     //println!("{:#?}", data);
 

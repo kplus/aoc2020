@@ -1,7 +1,6 @@
 use std::error::Error;
-use std::fs;
-use std::path::Path;
 
+use aoc2020::*;
 #[derive(Debug, Clone, PartialEq)]
 enum Instr {
     Nop, //No OPeration - it does nothing
@@ -167,22 +166,9 @@ fn find_bug(mut prog: ConsoleProm, lines: usize) -> i16 {
     prog.get_accumlator()
 }
 
-// [in]     Path of file to read details from
-// [out     Arrary of String for each lines
-fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
-    let input = fs::read_to_string(path)?;
-    //println!("read in content:\n{}", input);
-    let mut out = Vec::new();
-    for line in input.lines() {
-        //println!("read in peron details:\n{}", person);
-        out.push(line.to_string());
-    }
-    Ok(out)
-}
-
 // Question 1 uses find_end, and question 2 uses find_bug
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file()?;
     let lines = data.len();
     //println!("{:#?}", data);
     let console_program = ConsoleProm::new(data);

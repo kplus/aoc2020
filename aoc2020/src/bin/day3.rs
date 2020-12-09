@@ -1,6 +1,8 @@
 use std::fs::File;
 use std::io::prelude::*;
 
+use aoc2020::*;
+
 // Get repeat pattern for a row
 // The pattern is the whole row, I am overthinking the question
 fn get_pattern(st: &str) -> usize {
@@ -22,7 +24,7 @@ fn jump(row: &str, pos: usize, len: usize) -> usize {
 }
 
 fn main() -> std::io::Result<()> {
-    let mut file = File::open("../input.txt")?;
+    let mut file = File::open("../inputs/day3")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 

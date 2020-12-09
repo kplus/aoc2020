@@ -1,20 +1,6 @@
 use std::error::Error;
-use std::fs;
-use std::path::Path;
 
-// [in]     Path of file to read personal details from
-// [out     Arrary of Hashmaps, each Hashmap stores full details of a single person
-fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
-    let input = fs::read_to_string(path)?;
-    //println!("read in content:\n{}", input);
-
-    let mut out = Vec::new();
-    for person in input.split_terminator("\n\n") {
-        //println!("read in peron details:\n{}", person);
-        out.push(person.to_string());
-    }
-    Ok(out)
-}
+use aoc2020::*;
 
 fn to_mask(s: &str) -> u32 {
     let mut mask = 0;
@@ -50,7 +36,7 @@ fn count_all(s: String) -> u32 {
 // For question 1, call count_yes in the loop
 // For question 2, call count_all in the loop
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file()?;
     let mut count = 0;
 
     //println!("{:#?}", data);

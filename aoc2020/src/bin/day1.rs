@@ -26,7 +26,7 @@ fn find_match(contents: String) -> (i32, i32, i32, usize) {
 }
 
 fn main() -> std::io::Result<()> {
-    let mut file = File::open("../input.txt")?;
+    let mut file = File::open("../inputs/day1")?;
     let mut contents = String::new();
     file.read_to_string(&mut contents)?;
 

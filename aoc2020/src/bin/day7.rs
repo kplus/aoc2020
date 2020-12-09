@@ -1,7 +1,7 @@
 use std::collections::HashMap;
 use std::error::Error;
-use std::fs;
-use std::path::Path;
+
+use aoc2020::*;
 
 #[derive(Debug, Clone)]
 struct BAG {
@@ -90,20 +90,6 @@ fn build_tree(s: Vec<String>) -> HashMap<String, BAG> {
     tree
 }
 
-// [in]     Path of file to read details from
-// [out     Arrary of String for each lines
-fn load_file<P: AsRef<Path>>(path: P) -> Result<Vec<String>, Box<dyn Error>> {
-    let input = fs::read_to_string(path)?;
-    //println!("read in content:\n{}", input);
-
-    let mut out = Vec::new();
-    for line in input.lines() {
-        //println!("read in peron details:\n{}", person);
-        out.push(line.to_string());
-    }
-    Ok(out)
-}
-
 // Recursion function to get father and upper layers
 fn count_father_iter(s: String, tree: &HashMap<String, BAG>, v: &mut Vec<String>) {
     for father in tree.get(&s).unwrap().father.to_owned() {
@@ -143,7 +129,7 @@ fn get_all_child_bags(s: &str, tree: &HashMap<String, BAG>) -> usize {
 // Question 1 uses get_containers, and question 2 uses
 // get_all_bags
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file()?;
     //println!("{:#?}", data);
     let bag_name = "shiny gold";
     let bag_tree = build_tree(data);
