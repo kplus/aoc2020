@@ -94,7 +94,7 @@ fn add_max_min(a: &[usize]) -> usize {
 }
 // Question 1 uses find_end, and question 2 uses find_bug
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file("../input.txt")?;
+    let data = load_file("input.txt")?;
     //println!("{:#?}", data);
 
     let whole_array: Vec<usize> = data.iter().map(|s| s.parse::<usize>().unwrap()).collect();
