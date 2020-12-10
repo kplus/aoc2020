@@ -65,3 +65,57 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    static TEST_INPUT: &str = r"28
+        33
+        18
+        42
+        31
+        14
+        46
+        20
+        48
+        47
+        24
+        23
+        49
+        45
+        19
+        38
+        39
+        11
+        1
+        32
+        25
+        35
+        8
+        17
+        7
+        9
+        4
+        2
+        34
+        10
+        3";
+
+    #[test]
+    fn test_question1() {
+        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+
+        let mut data: Vec<usize> = data.iter().map(|s| s.parse::<usize>().unwrap()).collect();
+        data.sort();
+        assert_eq!(Ok([22, 0, 10]), question1(data));
+    }
+    #[test]
+    fn test_question2() {
+        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+
+        let mut data: Vec<usize> = data.iter().map(|s| s.parse::<usize>().unwrap()).collect();
+        data.sort();
+        assert_eq!(Ok(19208), question2(data));
+    }
+}
