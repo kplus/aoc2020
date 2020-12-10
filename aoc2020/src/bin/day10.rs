@@ -1,23 +1,37 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 // f(n)=f(n-1) * e(n-1) + f(n-2) * e(n-2) + f(n-3) * e(n-3)
 // where e(n) means the existance of n in the array.
-fn find_route(s: &[usize], i: usize) -> usize {
+fn find_route(s: &[usize], i: usize, cache: &mut HashMap<usize, usize>) -> usize {
+    //println!("Checking route for {}", i);
     if !s.contains(&i) {
+        //println!("Skipping due to {} not in array", i);
         return 0;
     }
+    if cache.contains_key(&i) {
+        return cache.get(&i).unwrap().to_owned();
+    }
     let route = match i {
-        0 => 1,
-        1 => s.contains(&1) as usize,
-        2 => find_route(&s, 1) + 1,
-        _ => find_route(&s, i - 1) + find_route(&s, i - 2) + find_route(&s, i - 3),
+        0 => 0,
+        1 => 1,
+        2 => find_route(&s, 1, cache) + 1,
+        3 => find_route(&s, 1, cache) + find_route(&s, 2, cache) + 1,
+        _ => {
+            find_route(&s, i - 1, cache)
+                + find_route(&s, i - 2, cache)
+                + find_route(&s, i - 3, cache)
+        }
     };
-    println!("route for {} is {}", i, route);
+    cache.insert(i, route);
+    //println!("route for {} is {}", i, route);
     route
 }
 
 fn question2(s: Vec<usize>) -> Result<usize, &'static str> {
-    Ok(find_route(&s, s[s.len() - 1]))
+    //println!("array to check is {:#?}", s);
+    let mut cache: HashMap<usize, usize> = HashMap::new();
+    Ok(find_route(&s, s[s.len() - 1], &mut cache))
 }
 
 fn question1(s: Vec<usize>) -> Result<[usize; 3], &'static str> {
