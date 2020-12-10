@@ -25,3 +25,23 @@ fn main() -> Result<(), Box<dyn Error>> {
     };
     Ok(())
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    static TEST_INPUT: &str = r"";
+
+    #[test]
+    fn test_question1() {
+        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+
+        assert_eq!(Ok([22, 0, 10]), question1());
+    }
+    #[test]
+    fn test_question2() {
+        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+
+        assert_eq!(Ok(19208), question2());
+    }
+}
