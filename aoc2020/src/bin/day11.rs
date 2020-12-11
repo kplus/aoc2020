@@ -73,7 +73,7 @@ impl SEAT {
         }
     }
 
-    fn pre_update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> u8 {
+    fn get_neighbor(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> u8 {
         self.old_state = self.state;
         let mut adj = 0;
         let directions = [
@@ -97,16 +97,17 @@ impl SEAT {
         }
         adj
     }
+
     fn update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> bool {
         let tolerant = question + 3;
         match self.state {
             STATE::Empty => {
-                if self.pre_update(m, question) == 0 {
+                if self.get_neighbor(m, question) == 0 {
                     self.state = STATE::Occupied;
                 }
             }
             STATE::Occupied => {
-                if self.pre_update(m, question) >= tolerant as u8 {
+                if self.get_neighbor(m, question) >= tolerant as u8 {
                     self.state = STATE::Empty;
                 }
             }
@@ -119,6 +120,7 @@ impl SEAT {
     }
 }
 
+// todo: can I use iterator instead of double loop?
 fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     let mut unstable = false;
     let row = mx.len();
@@ -134,6 +136,7 @@ fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     unstable
 }
 
+//todo: could try to improve the initialization precedure
 fn init_matrix(v: Vec<String>) -> Vec<Vec<SEAT>> {
     let row = v.len() + 2;
     let col = v[0].len() + 2;
@@ -165,6 +168,7 @@ fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
         .filter(|x| x.get_state() == STATE::Occupied)
         .count())
 }
+
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
