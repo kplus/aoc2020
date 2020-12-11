@@ -45,37 +45,42 @@ impl SEAT {
         self.changed
     }
 
-    fn _get_state_count(&self) -> u8 {
+    fn get_state_count(&self) -> u8 {
         (self.state == STATE::Occupied) as u8
     }
-    fn _get_old_state_count(&self) -> u8 {
+    fn get_old_state_count(&self) -> u8 {
         (self.old_state == STATE::Occupied) as u8
     }
 
-    fn pre_update(&mut self) -> u8 {
-        //todo: read adj array to get sum
-        let adjacent = 0;
-        self.changed = self.state != self.old_state;
+    fn pre_update(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
         self.old_state = self.state;
-        adjacent
+        let mut adj = 0;
+        for i in 0..3 {
+            adj += m[self.row - 1][self.col + 1 - i].get_old_state_count();
+            adj += m[self.row + 1][self.col + 1 - i].get_state_count();
+        }
+        adj += m[self.row][self.col - 1].get_old_state_count();
+        adj += m[self.row][self.col + 1].get_state_count();
+        adj
     }
 
-    fn update(&mut self) -> bool {
+    fn update(&mut self, m: Vec<Vec<SEAT>>) -> bool {
         match self.state {
             STATE::Floor => {
                 self.changed = false;
             }
             STATE::Empty => {
-                if self.pre_update() == 0 {
+                if self.pre_update(m) == 0 {
                     self.state = STATE::Occupied;
                 }
             }
             STATE::Occupied => {
-                if self.pre_update() >= 4 {
+                if self.pre_update(m) >= 4 {
                     self.state = STATE::Empty;
                 }
             }
         }
+        self.changed = self.state != self.old_state;
         self.changed
     }
 }
@@ -85,14 +90,16 @@ fn question2() -> Result<usize, &'static str> {
 
 fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
     let mut unstable = false;
-    for seat in mx.iter_mut().flatten() {
-        println!("Checking {:#?}", seat);
-        unstable |= seat.update();
-        println!(
-            "After update, it is {:?}",
-            (if unstable { "unstable" } else { "stable" })
-        );
+    let row = mx.len();
+    let col = mx[0].len();
+    for r in 0..row {
+        for c in 0..col {
+            let new_matrix = mx.to_owned();
+            unstable |= mx[r][c].update(new_matrix);
+        }
     }
+    //for seat in mx.iter_mut().flatten() {
+    // }
     unstable
 }
 
@@ -110,16 +117,20 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
     }
     //println!("matrix is {:#?}", matrix);
 
-    let mut round = 1;
+    let mut round = 0;
     while flip(&mut matrix) {
         round += 1;
     }
     println!("It takes {} rounds to get stable", round);
 
-    return Ok(round);
+    let occupied = matrix
+        .iter_mut()
+        .flatten()
+        .filter(|x| x._get_state() == STATE::Occupied)
+        .count();
+    Ok(occupied)
 
     //todo: use iterator fileter to get count of valid entries
-    Err("Cannot find first number.")
 }
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
@@ -158,7 +169,7 @@ L.LLLLL.LL";
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Ok(5), question1(data));
+        assert_eq!(Ok(37), question1(data));
     }
     #[test]
     fn test_question2() {
