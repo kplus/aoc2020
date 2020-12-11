@@ -14,7 +14,6 @@ enum STATE {
 struct SEAT {
     state: STATE,
     old_state: STATE,
-    changed: bool,
     row: usize,
     col: usize,
 }
@@ -29,7 +28,6 @@ impl SEAT {
         SEAT {
             state,
             old_state: state,
-            changed: false,
             row,
             col,
         }
@@ -39,9 +37,6 @@ impl SEAT {
     }
     fn get_old_state(&self) -> STATE {
         self.old_state
-    }
-    fn _check_changed(&self) -> bool {
-        self.changed
     }
 
     fn first_seat(
@@ -75,7 +70,7 @@ impl SEAT {
 
     fn get_neighbor(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> u8 {
         self.old_state = self.state;
-        let mut adj = 0;
+        let mut neighbor = 0;
         let directions = [
             (-1, -1),
             (-1, 0),
@@ -93,11 +88,13 @@ impl SEAT {
             if *x < 0 || (*x == 0 && *y < 0) {
                 before = true
             }
-            adj += m[row][col].first_seat(&m, x, y, question, before);
+            neighbor += m[row][col].first_seat(&m, x, y, question, before);
         }
-        adj
+        neighbor
     }
 
+    // Update a seat depends on the neighbor states, return a boolean
+    // to indicate whether the state of seat has been changed.
     fn update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> bool {
         let tolerant = question + 3;
         match self.state {
@@ -111,12 +108,9 @@ impl SEAT {
                     self.state = STATE::Empty;
                 }
             }
-            _ => {
-                self.changed = false;
-            }
+            _ => {}
         }
-        self.changed = self.state != self.old_state;
-        self.changed
+        self.state != self.old_state
     }
 }
 
@@ -152,6 +146,7 @@ fn init_matrix(v: Vec<String>) -> Vec<Vec<SEAT>> {
     matrix
 }
 
+// Get number of seats been occupies while the matrix get stable
 fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
     let mut matrix = init_matrix(v);
     //println!("matrix is {:#?}", matrix);
