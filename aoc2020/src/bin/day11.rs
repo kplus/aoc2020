@@ -14,10 +14,12 @@ struct SEAT {
     state: STATE,
     old_state: STATE,
     changed: bool,
+    row: usize,
+    col: usize,
 }
 
 impl SEAT {
-    fn from_char(c: char) -> Self {
+    fn from_char(c: char, row: usize, col: usize) -> Self {
         let state = {
             if c == 'L' {
                 STATE::Empty
@@ -29,6 +31,8 @@ impl SEAT {
             state,
             old_state: state,
             changed: false,
+            row,
+            col,
         }
     }
     fn _get_state(&self) -> STATE {
@@ -77,10 +81,19 @@ fn question2() -> Result<usize, &'static str> {
 }
 
 fn question1(v: Vec<String>) -> Result<usize, &'static str> {
-    for line in v.iter() {
-        let row: Vec<SEAT> = line.to_owned().chars().map(SEAT::from_char).collect();
-        println!("row is {:#?}", row);
+    let row = v.len() + 2;
+    let col = v[0].len() + 2;
+    let mut matrix: Vec<Vec<SEAT>> = vec![vec![SEAT::from_char('.', 0, 0); col]; row];
+
+    // initialise matrix
+    for r in 1..row - 1 {
+        for c in 1..col - 1 {
+            let ch = v[r - 1].chars().nth(c - 1).unwrap();
+            matrix[r][c] = SEAT::from_char(ch, r, c);
+        }
     }
+    println!("matrix is {:#?}", matrix);
+
     Err("Cannot find first number.")
 }
 fn main() -> Result<(), Box<dyn Error>> {
