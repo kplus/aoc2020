@@ -30,7 +30,7 @@ impl SEAT {
         SEAT {
             state,
             old_state: state,
-            changed: true,
+            changed: false,
             row,
             col,
         }
@@ -84,7 +84,16 @@ fn question2() -> Result<usize, &'static str> {
 }
 
 fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
-    false
+    let mut unstable = false;
+    for seat in mx.iter_mut().flatten() {
+        println!("Checking {:#?}", seat);
+        unstable |= seat.update();
+        println!(
+            "After update, it is {:?}",
+            (if unstable { "unstable" } else { "stable" })
+        );
+    }
+    unstable
 }
 
 fn question1(v: Vec<String>) -> Result<usize, &'static str> {
@@ -99,13 +108,15 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
             matrix[r][c] = SEAT::from_char(ch, r, c);
         }
     }
-    println!("matrix is {:#?}", matrix);
+    //println!("matrix is {:#?}", matrix);
 
-    let mut round = 0;
+    let mut round = 1;
     while flip(&mut matrix) {
         round += 1;
     }
     println!("It takes {} rounds to get stable", round);
+
+    return Ok(round);
 
     //todo: use iterator fileter to get count of valid entries
     Err("Cannot find first number.")
@@ -147,7 +158,7 @@ L.LLLLL.LL";
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find first number."), question1(data));
+        assert_eq!(Ok(5), question1(data));
     }
     #[test]
     fn test_question2() {
