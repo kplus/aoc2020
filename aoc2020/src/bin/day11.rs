@@ -44,55 +44,36 @@ impl SEAT {
         self.changed
     }
 
-    fn get_state_count(&self) -> u8 {
-        (self.state == STATE::Occupied) as u8
-    }
-    fn get_old_state_count(&self) -> u8 {
-        (self.old_state == STATE::Occupied) as u8
-    }
-
-    fn first_seat_before(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> u8 {
+    fn first_seat(
+        &self,
+        m: &Vec<Vec<SEAT>>,
+        row_step: &i32,
+        col_step: &i32,
+        question: usize,
+        before: bool,
+    ) -> u8 {
         let row = (self.row as i32 + *row_step) as usize;
         let col = (self.col as i32 + *col_step) as usize;
 
-        // println!(
-        //    "steps are {}, {}, and row is {}, col is {}, self row and col are: {} {}",
-        //     row_step, col_step, row, col, self.row, self.col
-        // );
-        match self.get_old_state() {
+        match if before {
+            self.get_old_state()
+        } else {
+            self.get_state()
+        } {
             STATE::Edge => 0,
             STATE::Occupied => 1,
             STATE::Empty => 0,
-            STATE::Floor => m[row][col].first_seat_before(m, row_step, col_step),
+            STATE::Floor => {
+                if question == 1 {
+                    0
+                } else {
+                    m[row][col].first_seat(m, row_step, col_step, question, before)
+                }
+            }
         }
     }
-    fn first_seat_after(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> u8 {
-        let row = (self.row as i32 + *row_step) as usize;
-        let col = (self.col as i32 + *col_step) as usize;
 
-        // println!(
-        //     "steps are {}, {}, and row is {}, col is {}, self row and col are: {} {}",
-        //     row_step, col_step, row, col, self.row, self.col
-        //);
-        match self.get_state() {
-            STATE::Edge => 0,
-            STATE::Occupied => 1,
-            STATE::Empty => 0,
-            STATE::Floor => m[row][col].first_seat_after(m, row_step, col_step),
-        }
-    }
-    fn pre_update(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
-        self.old_state = self.state;
-        let mut adj = 0;
-        for i in 0..3 {
-            adj += m[self.row - 1][self.col + 1 - i].get_old_state_count();
-            adj += m[self.row + 1][self.col + 1 - i].get_state_count();
-        }
-        adj += m[self.row][self.col - 1].get_old_state_count();
-        adj += m[self.row][self.col + 1].get_state_count();
-        adj
-    }
-    fn pre_update2(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
+    fn pre_update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> u8 {
         self.old_state = self.state;
         let mut adj = 0;
         let directions = [
@@ -108,43 +89,24 @@ impl SEAT {
         for (x, y) in directions.iter() {
             let row = (self.row as i32 + *x) as usize;
             let col = (self.col as i32 + *y) as usize;
+            let mut before = false;
             if *x < 0 || (*x == 0 && *y < 0) {
-                adj += m[row][col].first_seat_before(&m, x, y);
-            } else {
-                adj += m[row][col].first_seat_after(&m, x, y);
+                before = true
             }
+            adj += m[row][col].first_seat(&m, x, y, question, before);
         }
         adj
     }
-    fn update(&mut self, m: Vec<Vec<SEAT>>) -> bool {
+    fn update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> bool {
+        let tolerant = question + 3;
         match self.state {
             STATE::Empty => {
-                if self.pre_update(m) == 0 {
+                if self.pre_update(m, question) == 0 {
                     self.state = STATE::Occupied;
                 }
             }
             STATE::Occupied => {
-                if self.pre_update(m) >= 4 {
-                    self.state = STATE::Empty;
-                }
-            }
-            _ => {
-                self.changed = false;
-            }
-        }
-        self.changed = self.state != self.old_state;
-        self.changed
-    }
-
-    fn update2(&mut self, m: Vec<Vec<SEAT>>) -> bool {
-        match self.state {
-            STATE::Empty => {
-                if self.pre_update2(m) == 0 {
-                    self.state = STATE::Occupied;
-                }
-            }
-            STATE::Occupied => {
-                if self.pre_update2(m) >= 5 {
+                if self.pre_update(m, question) >= tolerant as u8 {
                     self.state = STATE::Empty;
                 }
             }
@@ -157,14 +119,14 @@ impl SEAT {
     }
 }
 
-fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
+fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     let mut unstable = false;
     let row = mx.len();
     let col = mx[0].len();
     for r in 0..row {
         for c in 0..col {
             let new_matrix = mx.to_owned();
-            unstable |= mx[r][c].update(new_matrix);
+            unstable |= mx[r][c].update(new_matrix, question);
         }
     }
     //for seat in mx.iter_mut().flatten() {
@@ -172,20 +134,6 @@ fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
     unstable
 }
 
-fn flip2(mx: &mut Vec<Vec<SEAT>>) -> bool {
-    let mut unstable = false;
-    let row = mx.len();
-    let col = mx[0].len();
-    for r in 0..row {
-        for c in 0..col {
-            let new_matrix = mx.to_owned();
-            unstable |= mx[r][c].update2(new_matrix);
-        }
-    }
-    //for seat in mx.iter_mut().flatten() {
-    // }
-    unstable
-}
 fn question2(v: Vec<String>) -> Result<usize, &'static str> {
     let row = v.len() + 2;
     let col = v[0].len() + 2;
@@ -201,7 +149,7 @@ fn question2(v: Vec<String>) -> Result<usize, &'static str> {
     //println!("matrix is {:#?}", matrix);
 
     let mut round = 0;
-    while flip2(&mut matrix) {
+    while flip(&mut matrix, 2) {
         round += 1;
     }
     println!("It takes {} rounds to get stable", round);
@@ -230,7 +178,7 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
     //println!("matrix is {:#?}", matrix);
 
     let mut round = 0;
-    while flip(&mut matrix) {
+    while flip(&mut matrix, 1) {
         round += 1;
     }
     println!("It takes {} rounds to get stable", round);
