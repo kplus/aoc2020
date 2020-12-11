@@ -134,7 +134,7 @@ fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     unstable
 }
 
-fn question2(v: Vec<String>) -> Result<usize, &'static str> {
+fn init_matrix(v: Vec<String>) -> Vec<Vec<SEAT>> {
     let row = v.len() + 2;
     let col = v[0].len() + 2;
     let mut matrix: Vec<Vec<SEAT>> = vec![vec![SEAT::from_char('E', 0, 0); col]; row];
@@ -146,64 +146,37 @@ fn question2(v: Vec<String>) -> Result<usize, &'static str> {
             matrix[r][c] = SEAT::from_char(ch, r, c);
         }
     }
-    //println!("matrix is {:#?}", matrix);
-
-    let mut round = 0;
-    while flip(&mut matrix, 2) {
-        round += 1;
-    }
-    println!("It takes {} rounds to get stable", round);
-
-    let occupied = matrix
-        .iter_mut()
-        .flatten()
-        .filter(|x| x.get_state() == STATE::Occupied)
-        .count();
-    Ok(occupied)
-
-    //todo: use iterator fileter to get count of valid entries
+    matrix
 }
-fn question1(v: Vec<String>) -> Result<usize, &'static str> {
-    let row = v.len() + 2;
-    let col = v[0].len() + 2;
-    let mut matrix: Vec<Vec<SEAT>> = vec![vec![SEAT::from_char('.', 0, 0); col]; row];
 
-    // initialise matrix
-    for r in 1..row - 1 {
-        for c in 1..col - 1 {
-            let ch = v[r - 1].chars().nth(c - 1).unwrap();
-            matrix[r][c] = SEAT::from_char(ch, r, c);
-        }
-    }
+fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
+    let mut matrix = init_matrix(v);
     //println!("matrix is {:#?}", matrix);
 
     let mut round = 0;
-    while flip(&mut matrix, 1) {
+    while flip(&mut matrix, q) {
         round += 1;
     }
-    println!("It takes {} rounds to get stable", round);
+    println!("Question {}: It takes {} rounds to get stable", q, round);
 
-    let occupied = matrix
+    Ok(matrix
         .iter_mut()
         .flatten()
         .filter(|x| x.get_state() == STATE::Occupied)
-        .count();
-    Ok(occupied)
-
-    //todo: use iterator fileter to get count of valid entries
+        .count())
 }
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
-    match question1(data.to_owned()) {
+    match question(data.to_owned(), 1) {
         Ok(x) => {
             println!("The result for question 1 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    match question2(data) {
+    match question(data, 2) {
         Ok(x) => {
-            println!("The sequency from position {}", x);
+            println!("The result for question 2 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
@@ -226,15 +199,10 @@ L.LLLLLL.L
 L.LLLLL.LL";
 
     #[test]
-    fn test_question1() {
+    fn test_question() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Ok(37), question1(data));
-    }
-    #[test]
-    fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
-        assert_eq!(Ok(26), question2(data));
+        assert_eq!(Ok(37), question(data.to_owned(), 1));
+        assert_eq!(Ok(26), question(data, 2));
     }
 }
