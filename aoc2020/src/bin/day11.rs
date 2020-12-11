@@ -7,6 +7,7 @@ enum STATE {
     Occupied,
     Empty,
     Floor,
+    Edge,
 }
 
 #[derive(Clone, Copy, Debug)]
@@ -20,12 +21,10 @@ struct SEAT {
 
 impl SEAT {
     fn from_char(c: char, row: usize, col: usize) -> Self {
-        let state = {
-            if c == 'L' {
-                STATE::Empty
-            } else {
-                STATE::Floor
-            }
+        let state = match c {
+            'L' => STATE::Empty,
+            '.' => STATE::Floor,
+            _ => STATE::Edge,
         };
         SEAT {
             state,
@@ -35,10 +34,10 @@ impl SEAT {
             col,
         }
     }
-    fn _get_state(&self) -> STATE {
+    fn get_state(&self) -> STATE {
         self.state
     }
-    fn _get_old_state(&self) -> STATE {
+    fn get_old_state(&self) -> STATE {
         self.old_state
     }
     fn _check_changed(&self) -> bool {
@@ -66,9 +65,6 @@ impl SEAT {
 
     fn update(&mut self, m: Vec<Vec<SEAT>>) -> bool {
         match self.state {
-            STATE::Floor => {
-                self.changed = false;
-            }
             STATE::Empty => {
                 if self.pre_update(m) == 0 {
                     self.state = STATE::Occupied;
@@ -79,13 +75,83 @@ impl SEAT {
                     self.state = STATE::Empty;
                 }
             }
+            _ => {
+                self.changed = false;
+            }
         }
         self.changed = self.state != self.old_state;
         self.changed
     }
-}
-fn question2() -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
+
+    fn first_seat_before(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> u8 {
+        let row = (self.row as i32 + *row_step) as usize;
+        let col = (self.col as i32 + *col_step) as usize;
+
+        // println!(
+        //    "steps are {}, {}, and row is {}, col is {}, self row and col are: {} {}",
+        //     row_step, col_step, row, col, self.row, self.col
+        // );
+        match self.get_old_state() {
+            STATE::Edge => 0,
+            STATE::Occupied => 1,
+            STATE::Empty => 0,
+            STATE::Floor => m[row][col].first_seat_before(m, row_step, col_step),
+        }
+    }
+    fn first_seat_after(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> u8 {
+        let row = (self.row as i32 + *row_step) as usize;
+        let col = (self.col as i32 + *col_step) as usize;
+
+        // println!(
+        //     "steps are {}, {}, and row is {}, col is {}, self row and col are: {} {}",
+        //     row_step, col_step, row, col, self.row, self.col
+        //);
+        match self.get_state() {
+            STATE::Edge => 0,
+            STATE::Occupied => 1,
+            STATE::Empty => 0,
+            STATE::Floor => m[row][col].first_seat_after(m, row_step, col_step),
+        }
+    }
+    fn pre_update2(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
+        self.old_state = self.state;
+        let mut adj = 0;
+        let before = [(-1, -1), (-1, 0), (-1, 1), (0, -1)];
+        let after = [(0, 1), (1, -1), (1, 0), (1, 1)];
+        for (x, y) in before.iter() {
+            let row = (self.row as i32 + *x) as usize;
+            let col = (self.col as i32 + *y) as usize;
+            //println!("x, y are {}, {}, and row is {}, col is {}", x, y, row, col);
+            adj += m[row][col].first_seat_before(&m, x, y);
+        }
+        for (x, y) in after.iter() {
+            let row = (self.row as i32 + *x) as usize;
+            let col = (self.col as i32 + *y) as usize;
+            //println!("x, y are {}, {}, and row is {}, col is {}", x, y, row, col);
+            adj += m[row][col].first_seat_after(&m, x, y);
+        }
+        adj
+    }
+
+    fn update2(&mut self, m: Vec<Vec<SEAT>>) -> bool {
+        match self.state {
+            STATE::Empty => {
+                if self.pre_update2(m) == 0 {
+                    self.state = STATE::Occupied;
+                }
+            }
+            STATE::Occupied => {
+                if self.pre_update2(m) >= 5 {
+                    self.state = STATE::Empty;
+                }
+            }
+            _ => {
+                self.changed = false;
+            }
+        }
+        self.changed = self.state != self.old_state;
+        self.changed
+    }
 }
 
 fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
@@ -103,6 +169,49 @@ fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
     unstable
 }
 
+fn flip2(mx: &mut Vec<Vec<SEAT>>) -> bool {
+    let mut unstable = false;
+    let row = mx.len();
+    let col = mx[0].len();
+    for r in 0..row {
+        for c in 0..col {
+            let new_matrix = mx.to_owned();
+            unstable |= mx[r][c].update2(new_matrix);
+        }
+    }
+    //for seat in mx.iter_mut().flatten() {
+    // }
+    unstable
+}
+fn question2(v: Vec<String>) -> Result<usize, &'static str> {
+    let row = v.len() + 2;
+    let col = v[0].len() + 2;
+    let mut matrix: Vec<Vec<SEAT>> = vec![vec![SEAT::from_char('E', 0, 0); col]; row];
+
+    // initialise matrix
+    for r in 1..row - 1 {
+        for c in 1..col - 1 {
+            let ch = v[r - 1].chars().nth(c - 1).unwrap();
+            matrix[r][c] = SEAT::from_char(ch, r, c);
+        }
+    }
+    //println!("matrix is {:#?}", matrix);
+
+    let mut round = 0;
+    while flip2(&mut matrix) {
+        round += 1;
+    }
+    println!("It takes {} rounds to get stable", round);
+
+    let occupied = matrix
+        .iter_mut()
+        .flatten()
+        .filter(|x| x.get_state() == STATE::Occupied)
+        .count();
+    Ok(occupied)
+
+    //todo: use iterator fileter to get count of valid entries
+}
 fn question1(v: Vec<String>) -> Result<usize, &'static str> {
     let row = v.len() + 2;
     let col = v[0].len() + 2;
@@ -126,7 +235,7 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
     let occupied = matrix
         .iter_mut()
         .flatten()
-        .filter(|x| x._get_state() == STATE::Occupied)
+        .filter(|x| x.get_state() == STATE::Occupied)
         .count();
     Ok(occupied)
 
@@ -135,13 +244,13 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
-    match question1(data) {
+    match question1(data.to_owned()) {
         Ok(x) => {
             println!("The result for question 1 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    match question2() {
+    match question2(data) {
         Ok(x) => {
             println!("The sequency from position {}", x);
         }
@@ -173,8 +282,8 @@ L.LLLLL.LL";
     }
     #[test]
     fn test_question2() {
-        let _data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2());
+        assert_eq!(Ok(26), question2(data));
     }
 }
