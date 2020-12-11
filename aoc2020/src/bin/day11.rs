@@ -51,38 +51,6 @@ impl SEAT {
         (self.old_state == STATE::Occupied) as u8
     }
 
-    fn pre_update(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
-        self.old_state = self.state;
-        let mut adj = 0;
-        for i in 0..3 {
-            adj += m[self.row - 1][self.col + 1 - i].get_old_state_count();
-            adj += m[self.row + 1][self.col + 1 - i].get_state_count();
-        }
-        adj += m[self.row][self.col - 1].get_old_state_count();
-        adj += m[self.row][self.col + 1].get_state_count();
-        adj
-    }
-
-    fn update(&mut self, m: Vec<Vec<SEAT>>) -> bool {
-        match self.state {
-            STATE::Empty => {
-                if self.pre_update(m) == 0 {
-                    self.state = STATE::Occupied;
-                }
-            }
-            STATE::Occupied => {
-                if self.pre_update(m) >= 4 {
-                    self.state = STATE::Empty;
-                }
-            }
-            _ => {
-                self.changed = false;
-            }
-        }
-        self.changed = self.state != self.old_state;
-        self.changed
-    }
-
     fn first_seat_before(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> u8 {
         let row = (self.row as i32 + *row_step) as usize;
         let col = (self.col as i32 + *col_step) as usize;
@@ -113,24 +81,59 @@ impl SEAT {
             STATE::Floor => m[row][col].first_seat_after(m, row_step, col_step),
         }
     }
+    fn pre_update(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
+        self.old_state = self.state;
+        let mut adj = 0;
+        for i in 0..3 {
+            adj += m[self.row - 1][self.col + 1 - i].get_old_state_count();
+            adj += m[self.row + 1][self.col + 1 - i].get_state_count();
+        }
+        adj += m[self.row][self.col - 1].get_old_state_count();
+        adj += m[self.row][self.col + 1].get_state_count();
+        adj
+    }
     fn pre_update2(&mut self, m: Vec<Vec<SEAT>>) -> u8 {
         self.old_state = self.state;
         let mut adj = 0;
-        let before = [(-1, -1), (-1, 0), (-1, 1), (0, -1)];
-        let after = [(0, 1), (1, -1), (1, 0), (1, 1)];
-        for (x, y) in before.iter() {
+        let directions = [
+            (-1, -1),
+            (-1, 0),
+            (-1, 1),
+            (0, -1),
+            (0, 1),
+            (1, -1),
+            (1, 0),
+            (1, 1),
+        ];
+        for (x, y) in directions.iter() {
             let row = (self.row as i32 + *x) as usize;
             let col = (self.col as i32 + *y) as usize;
-            //println!("x, y are {}, {}, and row is {}, col is {}", x, y, row, col);
-            adj += m[row][col].first_seat_before(&m, x, y);
-        }
-        for (x, y) in after.iter() {
-            let row = (self.row as i32 + *x) as usize;
-            let col = (self.col as i32 + *y) as usize;
-            //println!("x, y are {}, {}, and row is {}, col is {}", x, y, row, col);
-            adj += m[row][col].first_seat_after(&m, x, y);
+            if *x < 0 || (*x == 0 && *y < 0) {
+                adj += m[row][col].first_seat_before(&m, x, y);
+            } else {
+                adj += m[row][col].first_seat_after(&m, x, y);
+            }
         }
         adj
+    }
+    fn update(&mut self, m: Vec<Vec<SEAT>>) -> bool {
+        match self.state {
+            STATE::Empty => {
+                if self.pre_update(m) == 0 {
+                    self.state = STATE::Occupied;
+                }
+            }
+            STATE::Occupied => {
+                if self.pre_update(m) >= 4 {
+                    self.state = STATE::Empty;
+                }
+            }
+            _ => {
+                self.changed = false;
+            }
+        }
+        self.changed = self.state != self.old_state;
+        self.changed
     }
 
     fn update2(&mut self, m: Vec<Vec<SEAT>>) -> bool {
