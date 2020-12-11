@@ -2,32 +2,35 @@ use std::error::Error;
 
 use aoc2020::*;
 
-#[derive(Clone, Copy, PartialEq)]
+#[derive(Clone, Copy, PartialEq, Debug)]
 enum STATE {
     Occupied,
     Empty,
     Floor,
 }
 
+#[derive(Clone, Copy, Debug)]
 struct SEAT {
     state: STATE,
     old_state: STATE,
     changed: bool,
-    row: usize,
-    col: usize,
 }
 
 impl SEAT {
-    fn _init(&mut self) -> Self {
+    fn from_char(c: char) -> Self {
+        let state = {
+            if c == 'L' {
+                STATE::Empty
+            } else {
+                STATE::Floor
+            }
+        };
         SEAT {
-            state: STATE::Floor,
-            old_state: STATE::Floor,
-            changed: self.changed,
-            row: 0,
-            col: 0,
+            state,
+            old_state: state,
+            changed: false,
         }
     }
-
     fn _get_state(&self) -> STATE {
         self.state
     }
@@ -74,11 +77,15 @@ fn question2() -> Result<usize, &'static str> {
 }
 
 fn question1(v: Vec<String>) -> Result<usize, &'static str> {
+    for line in v.iter() {
+        let row: Vec<SEAT> = line.to_owned().chars().map(SEAT::from_char).collect();
+        println!("row is {:#?}", row);
+    }
     Err("Cannot find first number.")
 }
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
     match question1(data) {
         Ok(x) => {
             println!("The result for question 1 is {}", x);
