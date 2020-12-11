@@ -30,7 +30,7 @@ impl SEAT {
         SEAT {
             state,
             old_state: state,
-            changed: false,
+            changed: true,
             row,
             col,
         }
@@ -60,9 +60,11 @@ impl SEAT {
         adjacent
     }
 
-    fn _update(&mut self) {
+    fn update(&mut self) -> bool {
         match self.state {
-            STATE::Floor => {}
+            STATE::Floor => {
+                self.changed = false;
+            }
             STATE::Empty => {
                 if self.pre_update() == 0 {
                     self.state = STATE::Occupied;
@@ -74,10 +76,15 @@ impl SEAT {
                 }
             }
         }
+        self.changed
     }
 }
 fn question2() -> Result<usize, &'static str> {
     Err("Cannot find second number.")
+}
+
+fn flip(mx: &mut Vec<Vec<SEAT>>) -> bool {
+    false
 }
 
 fn question1(v: Vec<String>) -> Result<usize, &'static str> {
@@ -94,6 +101,13 @@ fn question1(v: Vec<String>) -> Result<usize, &'static str> {
     }
     println!("matrix is {:#?}", matrix);
 
+    let mut round = 0;
+    while flip(&mut matrix) {
+        round += 1;
+    }
+    println!("It takes {} rounds to get stable", round);
+
+    //todo: use iterator fileter to get count of valid entries
     Err("Cannot find first number.")
 }
 fn main() -> Result<(), Box<dyn Error>> {
