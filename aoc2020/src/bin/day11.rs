@@ -40,14 +40,10 @@ impl SEAT {
         self.neighbors.push((row, col));
     }
 
-    fn find_neighbor_seat(&self, m: &Vec<Vec<SEAT>>, row_step: i32, col_step: i32) -> (i32, i32) {
+    fn find_neighbor_seat(&self, m: &[Vec<SEAT>], row_step: i32, col_step: i32) -> (i32, i32) {
         match self.get_state() {
-            STATE::Floor => {
-                let row_check = (self.row + row_step) as usize;
-                let col_check = (self.col + col_step) as usize;
-
-                m[row_check][col_check].find_neighbor_seat(m, row_step, col_step)
-            }
+            STATE::Floor => m[(self.row + row_step) as usize][(self.col + col_step) as usize]
+                .find_neighbor_seat(m, row_step, col_step),
             _ => (self.row, self.col),
         }
     }
@@ -77,7 +73,7 @@ impl SEAT {
         }
     }
 
-    fn get_neighbor_count(&mut self, m: &Vec<Vec<SEAT>>) -> usize {
+    fn get_neighbor_count(&mut self, m: &[Vec<SEAT>]) -> usize {
         self.neighbors
             .iter()
             .filter(|(r, c)| m[*r as usize][*c as usize].get_state() == STATE::Occupied)
@@ -86,7 +82,7 @@ impl SEAT {
 
     // Update a seat depends on the neighbor states, return a boolean
     // to indicate whether the state of seat has been changed.
-    fn update(&mut self, m: &Vec<Vec<SEAT>>, question: usize) -> bool {
+    fn update(&mut self, m: &[Vec<SEAT>], question: usize) -> bool {
         let tolerant = question + 3;
         match self.state {
             STATE::Empty => {
