@@ -36,10 +36,13 @@ impl SEAT {
     fn get_state(&self) -> STATE {
         self.state
     }
+
+    // add neighbor row/col into the neighbor array
     fn add_neighbor(&mut self, row: i32, col: i32) {
         self.neighbors.push((row, col));
     }
 
+    // find the neightbor seat in the specified direction
     fn find_neighbor_seat(&self, m: &[Vec<SEAT>], row_step: i32, col_step: i32) -> (i32, i32) {
         match self.get_state() {
             STATE::Floor => m[(self.row + row_step) as usize][(self.col + col_step) as usize]
@@ -48,6 +51,7 @@ impl SEAT {
         }
     }
 
+    // find the neighbors in backwords directions
     fn set_neighbor(m: &mut Vec<Vec<SEAT>>, question: usize, row: i32, col: i32) {
         let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1)];
         for (x, y) in directions.iter() {
@@ -73,6 +77,7 @@ impl SEAT {
         }
     }
 
+    // get the sum of occupied neighbor seats
     fn get_neighbor_count(&mut self, m: &[Vec<SEAT>]) -> usize {
         self.neighbors
             .iter()
