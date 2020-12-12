@@ -122,7 +122,7 @@ impl SEAT {
             }
             _ => {}
         }
-        self.state != self.old_state
+        self.state != m[self.row][self.col].get_state()
     }
 }
 
@@ -130,11 +130,9 @@ impl SEAT {
 fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     let mut unstable = false;
     let new_matrix = mx.to_owned();
-    let row = mx.len();
-    let col = mx[0].len();
-    for r in 0..row {
-        for c in 0..col {
-            unstable |= mx[r][c].update(&new_matrix, question);
+    for r in mx {
+        for c in r {
+            unstable |= c.update(&new_matrix, question);
             //println!("flipping row {}, col {}", r, c);
         }
     }
