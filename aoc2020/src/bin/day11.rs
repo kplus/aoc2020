@@ -40,13 +40,13 @@ impl SEAT {
         self.neighbors.push((row, col));
     }
 
-    fn first_seat(&self, m: &Vec<Vec<SEAT>>, row_step: i32, col_step: i32) -> (i32, i32) {
+    fn find_neighbor_seat(&self, m: &Vec<Vec<SEAT>>, row_step: i32, col_step: i32) -> (i32, i32) {
         match self.get_state() {
             STATE::Floor => {
                 let row_check = (self.row + row_step) as usize;
                 let col_check = (self.col + col_step) as usize;
 
-                m[row_check][col_check].first_seat(m, row_step, col_step)
+                m[row_check][col_check].find_neighbor_seat(m, row_step, col_step)
             }
             _ => (self.row, self.col),
         }
@@ -69,7 +69,7 @@ impl SEAT {
             let (row_get, col_get) = if question == 1 {
                 (row_check, col_check)
             } else {
-                m[row_check as usize][col_check as usize].first_seat(&m, *x, *y)
+                m[row_check as usize][col_check as usize].find_neighbor_seat(&m, *x, *y)
             };
 
             m[row as usize][col as usize].add_neighbor(row_get, col_get);
