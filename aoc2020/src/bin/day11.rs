@@ -97,22 +97,16 @@ impl SEAT {
         }
     }
 
-    fn get_neighbor_count(&mut self, m: Vec<Vec<SEAT>>) -> usize {
+    fn get_neighbor_count(&mut self, m: &Vec<Vec<SEAT>>) -> usize {
         self.neighbors
             .iter()
-            .filter(|(r, c)| {
-                if *r < self.row || (*r == self.row && *c < self.col) {
-                    m[*r][*c].get_old_state() == STATE::Occupied
-                } else {
-                    m[*r][*c].get_state() == STATE::Occupied
-                }
-            })
+            .filter(|(r, c)| m[*r][*c].get_state() == STATE::Occupied)
             .count()
     }
 
     // Update a seat depends on the neighbor states, return a boolean
     // to indicate whether the state of seat has been changed.
-    fn update(&mut self, m: Vec<Vec<SEAT>>, question: usize) -> bool {
+    fn update(&mut self, m: &Vec<Vec<SEAT>>, question: usize) -> bool {
         let tolerant = question + 3;
         self.old_state = self.state;
         match self.state {
@@ -135,12 +129,12 @@ impl SEAT {
 // todo: can I use iterator instead of double loop?
 fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     let mut unstable = false;
+    let new_matrix = mx.to_owned();
     let row = mx.len();
     let col = mx[0].len();
     for r in 0..row {
         for c in 0..col {
-            let new_matrix = mx.to_owned();
-            unstable |= mx[r][c].update(new_matrix, question);
+            unstable |= mx[r][c].update(&new_matrix, question);
             //println!("flipping row {}, col {}", r, c);
         }
     }
