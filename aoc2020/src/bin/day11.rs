@@ -47,7 +47,7 @@ impl SEAT {
     }
 
     fn first_seat(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> (usize, usize) {
-        println!("self row is {}, col is {}", self.row, self.col);
+        //println!("self row is {}, col is {}", self.row, self.col);
         match self.get_state() {
             STATE::Floor => {
                 let row_check = (self.row as i32 + *row_step) as usize;
