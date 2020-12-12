@@ -1,11 +1,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-use aoc2020::*;
-
 // Get repeat pattern for a row
 // The pattern is the whole row, I am overthinking the question
-fn get_pattern(st: &str) -> usize {
+fn _get_pattern(st: &str) -> usize {
     let mut len = 1;
     for (p, c) in st.chars().enumerate() {
         let check = st.chars().nth(p % len).unwrap();
@@ -17,7 +15,7 @@ fn get_pattern(st: &str) -> usize {
 }
 
 // Return and find postion in next line
-fn jump(row: &str, pos: usize, len: usize) -> usize {
+fn jump(_row: &str, pos: usize, len: usize) -> usize {
     //let pattern = get_pattern(&row);
     let pattern = len;
     pos - len + len % pattern

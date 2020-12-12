@@ -14,7 +14,7 @@ fn to_mask(s: &str) -> u32 {
 
 // count how many yes has been answered by at least one of the person
 // within a group
-fn count_yes(s: String) -> usize {
+fn _count_yes(s: String) -> usize {
     let mut list: Vec<char> = s.split_whitespace().collect::<String>().chars().collect();
     list.sort();
     list.dedup();

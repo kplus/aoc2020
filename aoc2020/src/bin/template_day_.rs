@@ -36,13 +36,13 @@ mod tests {
 
     #[test]
     fn test_question1() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+        let _data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
         assert_eq!(Err("Cannot find first number."), question1());
     }
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+        let _data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
         assert_eq!(Err("Cannot find second number."), question2());
     }

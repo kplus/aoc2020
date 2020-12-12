@@ -1,11 +1,9 @@
 use std::fs::File;
 use std::io::prelude::*;
 
-use aoc2020::*;
-
 // return whether the password is valid
 // also print out the valid password string
-fn check_pass(line: &str) -> bool {
+fn _check_pass(line: &str) -> bool {
     let whole: Vec<&str> = line.split(' ').collect();
     let range: Vec<&str> = whole[0].split('-').collect();
     let ch: char = whole[1].chars().next().unwrap();
