@@ -10,7 +10,8 @@ enum Instructions {
     Forward(i32),
 }
 struct VM {
-    angle: i32,
+    wp_east: i32,
+    wp_north: i32,
     east_position: i32,
     north_position: i32,
 }
@@ -35,7 +36,8 @@ impl Instructions {
 impl VM {
     fn new() -> VM {
         VM {
-            angle: 0,
+            wp_east: 10,
+            wp_north: 1,
             east_position: 0,
             north_position: 0,
         }
@@ -43,27 +45,35 @@ impl VM {
 
     fn action(&mut self, instr: Instructions) {
         match instr {
-            Instructions::East(x) => self.east_position += x,
-            Instructions::North(x) => self.north_position += x,
-            Instructions::Turn(x) => {
-                self.angle += x;
-                self.angle %= 360;
-            }
-            Instructions::Forward(x) => match self.angle / 90 {
-                0 => self.east_position += x,
-                1 => self.north_position += x,
-                2 => self.east_position -= x,
-                3 => self.north_position -= x,
+            Instructions::East(x) => self.wp_east += x,
+            Instructions::North(x) => self.wp_north += x,
+            Instructions::Turn(x) => match x / 90 {
+                0 | 4 => {}
+                1 => {
+                    let tmp = self.wp_north;
+                    self.wp_north = self.wp_east;
+                    self.wp_east = -tmp;
+                }
+                2 => {
+                    self.wp_east = -self.wp_east;
+                    self.wp_north = -self.wp_north;
+                }
+                3 => {
+                    let tmp = self.wp_north;
+                    self.wp_north = -self.wp_east;
+                    self.wp_east = tmp;
+                }
                 _ => eprintln!("Invalid angle found."),
             },
+            Instructions::Forward(x) => {
+                self.east_position += x * self.wp_east;
+                self.north_position += x * self.wp_north;
+            }
         }
     }
 }
-fn question2() -> Result<i32, &'static str> {
-    Err("Cannot find second number.")
-}
 
-fn question1(v: Vec<String>) -> Result<i32, &'static str> {
+fn question(v: Vec<String>) -> Result<i32, &'static str> {
     let instr_list: Vec<Instructions> = v
         .iter()
         .map(|s| Instructions::from_str(s.to_string()).unwrap())
@@ -83,15 +93,9 @@ fn question1(v: Vec<String>) -> Result<i32, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
-    match question1(data) {
+    match question(data) {
         Ok(x) => {
-            println!("The result for question 1 is {}", x);
-        }
-        Err(x) => eprintln!("Error processing the input data: {:?}", x),
-    };
-    match question2() {
-        Ok(x) => {
-            println!("The sequency from position {}", x);
+            println!("The result for question 2 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
@@ -109,15 +113,9 @@ mod tests {
     F11";
 
     #[test]
-    fn test_question1() {
+    fn test_question() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Ok(25), question1(data));
-    }
-    #[test]
-    fn test_question2() {
-        let _data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
-        assert_eq!(Err("Cannot find second number."), question2());
+        assert_eq!(Ok(286), question(data));
     }
 }
