@@ -13,7 +13,6 @@ enum STATE {
 #[derive(Clone, Debug)]
 struct SEAT {
     state: STATE,
-    old_state: STATE,
     row: usize,
     col: usize,
     neighbors: Vec<(usize, usize)>,
@@ -28,7 +27,6 @@ impl SEAT {
         };
         SEAT {
             state,
-            old_state: state,
             row,
             col,
             neighbors: Vec::new(),
@@ -38,10 +36,6 @@ impl SEAT {
     fn get_state(&self) -> STATE {
         self.state
     }
-    fn get_old_state(&self) -> STATE {
-        self.old_state
-    }
-
     fn add_neighbor(&mut self, row: usize, col: usize) {
         self.neighbors.push((row, col));
     }
@@ -108,7 +102,6 @@ impl SEAT {
     // to indicate whether the state of seat has been changed.
     fn update(&mut self, m: &Vec<Vec<SEAT>>, question: usize) -> bool {
         let tolerant = question + 3;
-        self.old_state = self.state;
         match self.state {
             STATE::Empty => {
                 if self.get_neighbor_count(m) == 0 {
@@ -126,18 +119,12 @@ impl SEAT {
     }
 }
 
-// todo: can I use iterator instead of double loop?
 fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     let mut unstable = false;
     let new_matrix = mx.to_owned();
-    for r in mx {
-        for c in r {
-            unstable |= c.update(&new_matrix, question);
-            //println!("flipping row {}, col {}", r, c);
-        }
+    for seat in mx.iter_mut().flatten() {
+        unstable |= seat.update(&new_matrix, question);
     }
-    //for seat in mx.iter_mut().flatten() {
-    // }
     unstable
 }
 
@@ -178,7 +165,6 @@ fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
     let mut round = 0;
     while flip(&mut matrix, q) {
         round += 1;
-        println!("{} rounds running", round);
     }
     println!("Question {}: It takes {} rounds to get stable", q, round);
 
@@ -192,14 +178,12 @@ fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("raw date in is: {:#?}", data);
-    /*
     match question(data.to_owned(), 1) {
         Ok(x) => {
             println!("The result for question 1 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    */
     match question(data, 2) {
         Ok(x) => {
             println!("The result for question 2 is {}", x);
