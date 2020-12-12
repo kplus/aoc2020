@@ -102,7 +102,7 @@ fn count_father_iter(s: String, tree: &HashMap<String, BAG>, v: &mut Vec<String>
 // [in]     The target bag name
 // [in]     The bag tree
 // [out]    Number of possible bags
-fn _get_containers(s: &str, tree: HashMap<String, BAG>) -> usize {
+fn get_containers(s: &str, tree: &HashMap<String, BAG>) -> usize {
     let mut v: Vec<String> = Vec::new();
     let s = s.to_string();
     count_father_iter(s, &tree, &mut v);
@@ -126,8 +126,6 @@ fn get_all_child_bags(s: &str, tree: &HashMap<String, BAG>) -> usize {
     count
 }
 
-// Question 1 uses get_containers, and question 2 uses
-// get_all_bags
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
@@ -135,7 +133,17 @@ fn main() -> Result<(), Box<dyn Error>> {
     let bag_tree = build_tree(data);
     //println!("bag tree built is {:#?}", bag_tree);
 
-    //let count = get_containers(bag_name, bag_tree);
+    let count = get_containers(bag_name, &bag_tree);
+    match count {
+        0 => eprintln!(
+            "No bag name {} found, please check your input file.",
+            bag_name
+        ),
+        x => println!(
+            "There are {} bags that can contain at least 1 {}",
+            x, bag_name
+        ),
+    }
     let count = get_all_child_bags(bag_name, &bag_tree);
     match count {
         0 => eprintln!(
