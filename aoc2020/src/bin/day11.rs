@@ -141,6 +141,7 @@ fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
         for c in 0..col {
             let new_matrix = mx.to_owned();
             unstable |= mx[r][c].update(new_matrix, question);
+            //println!("flipping row {}, col {}", r, c);
         }
     }
     //for seat in mx.iter_mut().flatten() {
@@ -185,8 +186,9 @@ fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
     let mut round = 0;
     while flip(&mut matrix, q) {
         round += 1;
+        println!("{} rounds running", round);
     }
-    //println!("Question {}: It takes {} rounds to get stable", q, round);
+    println!("Question {}: It takes {} rounds to get stable", q, round);
 
     Ok(matrix
         .iter_mut()
@@ -198,12 +200,14 @@ fn question(v: Vec<String>, q: usize) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("raw date in is: {:#?}", data);
+    /*
     match question(data.to_owned(), 1) {
         Ok(x) => {
             println!("The result for question 1 is {}", x);
         }
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
+    */
     match question(data, 2) {
         Ok(x) => {
             println!("The result for question 2 is {}", x);
