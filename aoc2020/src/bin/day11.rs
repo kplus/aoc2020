@@ -53,12 +53,12 @@ impl SEAT {
 
     // find the neighbors in backwords directions
     fn set_neighbor(m: &mut Vec<Vec<SEAT>>, question: usize, row: i32, col: i32) {
-        let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1)];
+        let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1)]; // only check neighbors before current seat
         for (x, y) in directions.iter() {
-            let row_check = row as i32 + *x;
-            let col_check = col as i32 + *y;
+            let row_check = row + x;
+            let col_check = col + y;
 
-            if row_check < 0
+            if row_check < 0    // we don't care about Edge node's neighbor
                 || col_check < 0
                 || row_check == m.len() as i32
                 || col_check == m[0].len() as i32
@@ -115,13 +115,11 @@ fn flip(mx: &mut Vec<Vec<SEAT>>, question: usize) -> bool {
     unstable
 }
 
-//todo: could try to improve the initialization precedure
+// Can't use iterator map to create the matrix, as r/c are needed
 fn init_matrix(v: Vec<String>, q: usize) -> Vec<Vec<SEAT>> {
     let row = v.len() + 2;
     let col = v[0].len() + 2;
     let mut matrix: Vec<Vec<SEAT>> = vec![vec![SEAT::from_char('E', 0, 0); col]; row];
-
-    //println!("matrix is {:#?}", matrix);
 
     // initialise matrix
     for r in 0..row {
@@ -140,7 +138,6 @@ fn init_matrix(v: Vec<String>, q: usize) -> Vec<Vec<SEAT>> {
             SEAT::set_neighbor(&mut matrix, q, r as i32, c as i32);
         }
     }
-    //println!("matrix after init is {:#?}", matrix);
     matrix
 }
 
@@ -166,15 +163,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("raw date in is: {:#?}", data);
     match question(data.to_owned(), 1) {
-        Ok(x) => {
-            println!("The result for question 1 is {}", x);
-        }
+        Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     match question(data, 2) {
-        Ok(x) => {
-            println!("The result for question 2 is {}", x);
-        }
+        Ok(x) => println!("The result for question 2 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
