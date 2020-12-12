@@ -13,13 +13,13 @@ enum STATE {
 #[derive(Clone, Debug)]
 struct SEAT {
     state: STATE,
-    row: usize,
-    col: usize,
-    neighbors: Vec<(usize, usize)>,
+    row: i32,
+    col: i32,
+    neighbors: Vec<(i32, i32)>,
 }
 
 impl SEAT {
-    fn from_char(c: char, row: usize, col: usize) -> Self {
+    fn from_char(c: char, row: i32, col: i32) -> Self {
         let state = match c {
             'L' => STATE::Empty,
             '.' => STATE::Floor,
@@ -36,36 +36,28 @@ impl SEAT {
     fn get_state(&self) -> STATE {
         self.state
     }
-    fn add_neighbor(&mut self, row: usize, col: usize) {
+    fn add_neighbor(&mut self, row: i32, col: i32) {
         self.neighbors.push((row, col));
     }
 
-    fn first_seat(&self, m: &Vec<Vec<SEAT>>, row_step: &i32, col_step: &i32) -> (usize, usize) {
-        //println!("self row is {}, col is {}", self.row, self.col);
+    fn first_seat(&self, m: &Vec<Vec<SEAT>>, row_step: i32, col_step: i32) -> (i32, i32) {
         match self.get_state() {
             STATE::Floor => {
-                let row_check = (self.row as i32 + *row_step) as usize;
-                let col_check = (self.col as i32 + *col_step) as usize;
-                //                    println!(
-                //                      "row is {}, col is {}, row_check is {}, col_check is {}, self is {:#?}",
-                //                    self.row, self.col, row_check, col_check, self
-                //              );
+                let row_check = (self.row + row_step) as usize;
+                let col_check = (self.col + col_step) as usize;
+
                 m[row_check][col_check].first_seat(m, row_step, col_step)
             }
             _ => (self.row, self.col),
         }
     }
 
-    fn set_neighbor(m: &mut Vec<Vec<SEAT>>, question: usize, row: usize, col: usize) {
+    fn set_neighbor(m: &mut Vec<Vec<SEAT>>, question: usize, row: i32, col: i32) {
         let directions = [(-1, -1), (-1, 0), (-1, 1), (0, -1)];
         for (x, y) in directions.iter() {
             let row_check = row as i32 + *x;
             let col_check = col as i32 + *y;
 
-            //println!(
-            //    "row is {}, col is {}, row_check is {}, col_check is {}, row limit is {}, col limit is {}, x is {}, y is {}",
-            //    row, col, row_check, col_check, m.len(),m[0].len(), x, y
-            // );
             if row_check < 0
                 || col_check < 0
                 || row_check == m.len() as i32
@@ -74,27 +66,21 @@ impl SEAT {
                 continue;
             }
 
-            let row_check = row_check as usize;
-            let col_check = col_check as usize;
             let (row_get, col_get) = if question == 1 {
                 (row_check, col_check)
             } else {
-                m[row_check][col_check].first_seat(&m, x, y)
+                m[row_check as usize][col_check as usize].first_seat(&m, *x, *y)
             };
 
-            //println!(
-            //    "row is {}, col is {}, row_get is {}, col_get is {}",
-            //    row, col, row_get, col_get
-            //);
-            m[row][col].add_neighbor(row_get, col_get);
-            m[row_get][col_get].add_neighbor(row, col);
+            m[row as usize][col as usize].add_neighbor(row_get, col_get);
+            m[row_get as usize][col_get as usize].add_neighbor(row, col);
         }
     }
 
     fn get_neighbor_count(&mut self, m: &Vec<Vec<SEAT>>) -> usize {
         self.neighbors
             .iter()
-            .filter(|(r, c)| m[*r][*c].get_state() == STATE::Occupied)
+            .filter(|(r, c)| m[*r as usize][*c as usize].get_state() == STATE::Occupied)
             .count()
     }
 
@@ -115,7 +101,7 @@ impl SEAT {
             }
             _ => {}
         }
-        self.state != m[self.row][self.col].get_state()
+        self.state != m[self.row as usize][self.col as usize].get_state()
     }
 }
 
@@ -145,12 +131,12 @@ fn init_matrix(v: Vec<String>, q: usize) -> Vec<Vec<SEAT>> {
                 'E'
             };
 
-            matrix[r][c] = SEAT::from_char(ch, r, c);
+            matrix[r][c] = SEAT::from_char(ch, r as i32, c as i32);
             if ch == '.' {
                 continue;
             }
 
-            SEAT::set_neighbor(&mut matrix, q, r, c);
+            SEAT::set_neighbor(&mut matrix, q, r as i32, c as i32);
         }
     }
     //println!("matrix after init is {:#?}", matrix);
