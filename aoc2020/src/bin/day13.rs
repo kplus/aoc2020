@@ -92,4 +92,13 @@ mod tests {
 
         assert_eq!(Ok(1068781), question2(data));
     }
+
+    #[test]
+    fn test_get_lcm() {
+        assert_eq!(1, get_lcm(&1, 1));
+        assert_eq!(100, get_lcm(&1, 100));
+        assert_eq!(142, get_lcm(&71, 142));
+        assert_eq!(360, get_lcm(&72, 30));
+        assert_eq!(2201, get_lcm(&71, 31));
+    }
 }
