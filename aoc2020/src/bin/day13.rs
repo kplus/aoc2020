@@ -3,14 +3,17 @@ use std::error::Error;
 use aoc2020::*;
 
 // find the least common multiple of 2 intergers
-fn get_lcm(m: &u64, n: u64) -> u64 {
-    for i in 1..n {
-        let check = m * i;
-        if check % n == 0 {
-            return check;
-        }
+// use Euclid's algorithm to find gcd, and got lcm = m*n/gcd
+fn get_lcm(m: u64, n: u64) -> u64 {
+    let mut big = if m >= n { m } else { n };
+    let mut small = if m < n { m } else { n };
+    let mut r = big % small;
+    while r != 0 {
+        big = small;
+        small = r;
+        r = big % small;
     }
-    m * n
+    m * n / small
 }
 
 // get the next timestamp with new bus added into consideration
@@ -23,14 +26,13 @@ fn add_bus(lcm: &u64, last_match: &u64, bus: u64, timestamp: u64) -> u64 {
 }
 
 fn question2(data: Vec<String>) -> Result<u64, &'static str> {
-    // get valid buses and their offset from beginning
     let mut lcm = 1;
     let mut first_match = 0;
     for (timestamp, bus) in data[1].split(',').enumerate() {
         if bus != "x" {
             let bus = bus.parse::<u64>().unwrap();
             first_match = add_bus(&lcm, &first_match, bus, timestamp as u64);
-            lcm = get_lcm(&lcm, bus);
+            lcm = get_lcm(lcm, bus);
         }
     }
 
@@ -43,7 +45,6 @@ fn question1(data: Vec<String>) -> Result<u64, &'static str> {
         .split(|c| c == 'x' || c == ',')
         .filter_map(|s| s.parse().ok())
         .collect();
-    //println!("time is {}, buuses are {:#?}", time, buses);
 
     let mut wait = u64::MAX;
     let mut bus = 0;
@@ -95,10 +96,10 @@ mod tests {
 
     #[test]
     fn test_get_lcm() {
-        assert_eq!(1, get_lcm(&1, 1));
-        assert_eq!(100, get_lcm(&1, 100));
-        assert_eq!(142, get_lcm(&71, 142));
-        assert_eq!(360, get_lcm(&72, 30));
-        assert_eq!(2201, get_lcm(&71, 31));
+        assert_eq!(1, get_lcm(1, 1));
+        assert_eq!(100, get_lcm(1, 100));
+        assert_eq!(142, get_lcm(71, 142));
+        assert_eq!(360, get_lcm(72, 30));
+        assert_eq!(2201, get_lcm(71, 31));
     }
 }
