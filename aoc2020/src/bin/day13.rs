@@ -13,36 +13,27 @@ fn get_lcm(m: &u64, n: u64) -> u64 {
     m * n
 }
 
-// get the next
-fn add_bus(lcm: &u64, last_match: &u64, bus: u64, sch: u64) -> (u64, u64) {
-    let step = get_lcm(&lcm, bus);
+// get the next timestamp with new bus added into consideration
+fn add_bus(lcm: &u64, last_match: &u64, bus: u64, timestamp: u64) -> u64 {
     let mut count = 0;
-    while (lcm * count + last_match + sch) % bus != 0 {
+    while (lcm * count + last_match + timestamp) % bus != 0 {
         count += 1;
     }
-    (lcm * count + last_match, step)
+    lcm * count + last_match
 }
 
 fn question2(data: Vec<String>) -> Result<u64, &'static str> {
-    let buses: Vec<&str> = data[1].split(',').collect();
-    //println!("buses are {:#?}", buses);
-
     // get valid buses and their offset from beginning
-    let mut valid_bus = Vec::new();
-    for (sch, bus) in buses.iter().enumerate() {
-        if bus != &"x" {
-            valid_bus.push((sch, bus.parse::<u64>().unwrap()));
+    let mut lcm = 1;
+    let mut first_match = 0;
+    for (timestamp, bus) in data[1].split(',').enumerate() {
+        if bus != "x" {
+            let bus = bus.parse::<u64>().unwrap();
+            first_match = add_bus(&lcm, &first_match, bus, timestamp as u64);
+            lcm = get_lcm(&lcm, bus);
         }
     }
-    //println!("valid buses are {:#?}", valid_bus);
 
-    let mut lcm = valid_bus[0].1;
-    let mut first_match = 0;
-    for (sch, bus) in valid_bus {
-        let (m, l) = add_bus(&lcm, &first_match, bus, sch as u64);
-        first_match = m;
-        lcm = l;
-    }
     Ok(first_match)
 }
 
@@ -72,15 +63,11 @@ fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
     match question1(data.to_owned()) {
-        Ok(x) => {
-            println!("The result for question 1 is {}", x);
-        }
+        Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     match question2(data) {
-        Ok(x) => {
-            println!("The result for question 2 is {}", x);
-        }
+        Ok(x) => println!("The result for question 2 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
