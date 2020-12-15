@@ -1,8 +1,6 @@
 use std::collections::HashMap;
 use std::error::Error;
 
-use aoc2020::*;
-
 fn question(data: Vec<usize>, end: usize) -> Result<usize, &'static str> {
     let start = data.len() - 1;
     let mut game: HashMap<usize, usize> = data
@@ -73,17 +71,17 @@ mod tests {
     #[test]
     fn test_question2() {
         let input = vec![
-            (vec![0, 3, 6], 436),
-            (vec![1, 3, 2], 1),
-            (vec![2, 1, 3], 10),
-            (vec![1, 2, 3], 27),
-            (vec![2, 3, 1], 78),
-            (vec![3, 2, 1], 438),
-            (vec![3, 1, 2], 1836),
+            (vec![0, 3, 6], 175594),
+            (vec![1, 3, 2], 2578),
+            (vec![2, 1, 3], 3544142),
+            (vec![1, 2, 3], 261214),
+            (vec![2, 3, 1], 6895259),
+            (vec![3, 2, 1], 18),
+            (vec![3, 1, 2], 362),
         ];
         for (start, target) in input {
             assert_eq!(1, 1);
-            //assert_eq!(Ok(target), question2(start));
+            assert_eq!(Ok(target), question(start, 3000_0000));
         }
     }
 }
