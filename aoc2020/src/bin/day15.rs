@@ -1,10 +1,10 @@
 use std::error::Error;
 
-const END1: usize = 1000000;
+const END1: usize = 30000000;
 //const END1: usize = 2020;
 fn question(data: Vec<usize>) -> Result<usize, &'static str> {
     let start = data.len() - 1;
-    let mut game: [usize; END1] = [usize::MAX; END1];
+    let mut game = vec![usize::MAX; END1];
 
     for i in 0..start {
         game[data[i]] = i;
