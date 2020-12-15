@@ -3,13 +3,7 @@ use std::error::Error;
 
 use aoc2020::*;
 
-fn question2(data: Vec<usize>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
-}
-
-fn question1(data: Vec<usize>) -> Result<usize, &'static str> {
-    const END: usize = 2020;
-
+fn question(data: Vec<usize>, end: usize) -> Result<usize, &'static str> {
     let start = data.len() - 1;
     let mut game: HashMap<usize, usize> = data
         .iter()
@@ -20,7 +14,7 @@ fn question1(data: Vec<usize>) -> Result<usize, &'static str> {
         .collect();
     //println!("initial map is {:#?}", game);
     let mut last = data[start];
-    for count in start..END - 1 {
+    for count in start..end - 1 {
         //println!("last number is {}, count is {}", last, count);
         match game.get_mut(&last) {
             Some(x) => {
@@ -41,14 +35,16 @@ fn question1(data: Vec<usize>) -> Result<usize, &'static str> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     const DATA: &str = r"6,13,1,15,2,0";
+    const END1: usize = 2020;
+    const END2: usize = 3000_0000;
     //println!("{:#?}", DATA);
 
     let start_numbers: Vec<usize> = DATA.split(',').map(|s| s.parse().unwrap()).collect();
-    match question1(start_numbers.to_owned()) {
+    match question(start_numbers.to_owned(), END1) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    match question2(start_numbers) {
+    match question(start_numbers, END2) {
         Ok(x) => println!("The sequency from position {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
@@ -71,7 +67,7 @@ mod tests {
             (vec![3, 1, 2], 1836),
         ];
         for (start, target) in input {
-            assert_eq!(Ok(target), question1(start));
+            assert_eq!(Ok(target), question(start, 2020));
         }
     }
     #[test]
