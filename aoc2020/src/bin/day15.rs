@@ -1,23 +1,23 @@
 use std::error::Error;
 
-const END1: usize = 2020;
+const END1: usize = 1000000;
+//const END1: usize = 2020;
 fn question(data: Vec<usize>) -> Result<usize, &'static str> {
     let start = data.len() - 1;
     let mut game: [usize; END1] = [usize::MAX; END1];
 
-    println!("initial map is");
     for i in 0..start {
         game[data[i]] = i;
     }
-    for i in 0..20 {
-        println!("position {} is {}", i, game[i]);
-    }
+    //for i in 0..20 {
+    //    println!("position {} is {}", i, game[i]);
+    //}
     let mut next = data[start];
     for count in start..END1 - 1 {
-        println!(
-            "checking number {}, it's last position is {} ,count is {}, ",
-            next, game[next], count
-        );
+        //println!(
+        //    "checking number {}, it's last position is {} ,count is {}, ",
+        //    next, game[next], count
+        //);
         match game[next] {
             usize::MAX => {
                 game[next] = count;
