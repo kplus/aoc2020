@@ -36,17 +36,15 @@ impl RANGE {
     fn update(&self, valid: &mut Vec<RANGE>) -> bool {
         let mut overlap = false;
         for v in valid {
-            if self.no_overlaps(v) {
-                continue;
-            } else if v.min < self.min && v.max >= self.min && v.max < self.max {
-                v.max = self.max;
-            } else if v.min >= self.min && v.max <= self.max {
-                v.min = self.min;
-                v.max = self.max;
-            } else if v.min > self.min && v.min <= self.max && v.max > self.max {
-                v.min = self.min;
+            if !self.no_overlaps(v) {
+                if self.includes(v.min) {
+                    v.min = self.min;
+                }
+                if self.includes(v.max) {
+                    v.max = self.max;
+                }
+                overlap = true;
             }
-            overlap = true;
         }
         overlap
     }
