@@ -10,9 +10,25 @@ enum SETCTIONS {
 }
 
 #[derive(Debug)]
+struct RANGE {
+    min: usize,
+    max: usize,
+}
+impl RANGE {
+    // todo: Fill RANGE with a string matches pattern 'dd-dd'
+    fn from_str(s: &str) -> Self {
+        let r: Vec<usize> = s.split('-').map(|c| c.parse().unwrap()).collect();
+        RANGE {
+            min: r[0],
+            max: r[1],
+        }
+    }
+}
+
+#[derive(Debug)]
 struct RULE {
-    field: String,           // string of filed name
-    ranges: Vec<Vec<usize>>, // list of valid ranges
+    field: String,      // string of filed name
+    ranges: Vec<RANGE>, // list of valid ranges
 }
 
 impl RULE {
@@ -23,7 +39,7 @@ impl RULE {
             field: String::from(s.split(':').next().unwrap()),
             ranges: re
                 .captures_iter(s.as_str())
-                .map(|c| c[0].split('-').map(|c| c.parse().unwrap()).collect())
+                .map(|c| RANGE::from_str(&c[0]))
                 .collect(),
         }
     }
