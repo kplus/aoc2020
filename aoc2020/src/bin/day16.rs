@@ -9,19 +9,46 @@ enum SETCTIONS {
     NearbyTicket,
 }
 
-#[derive(Debug)]
+#[derive(Debug, Clone, Copy)]
 struct RANGE {
     min: usize,
     max: usize,
 }
 impl RANGE {
-    // todo: Fill RANGE with a string matches pattern 'dd-dd'
+    // Fill RANGE with a string matches pattern 'dd-dd'
     fn from_str(s: &str) -> Self {
         let r: Vec<usize> = s.split('-').map(|c| c.parse().unwrap()).collect();
         RANGE {
             min: r[0],
             max: r[1],
         }
+    }
+
+    fn no_overlaps(&self, valid: &RANGE) -> bool {
+        valid.max < self.min || valid.min > self.max
+    }
+
+    fn includes(&self, n: usize) -> bool {
+        n <= self.max && n >= self.min
+    }
+    // Update overlapped valid range with current range
+    // return false if there is no overlap
+    fn update(&self, valid: &mut Vec<RANGE>) -> bool {
+        let mut overlap = false;
+        for v in valid {
+            if self.no_overlaps(v) {
+                continue;
+            } else if v.min < self.min && v.max >= self.min && v.max < self.max {
+                v.max = self.max;
+            } else if v.min >= self.min && v.max <= self.max {
+                v.min = self.min;
+                v.max = self.max;
+            } else if v.min > self.min && v.min <= self.max && v.max > self.max {
+                v.min = self.min;
+            }
+            overlap = true;
+        }
+        overlap
     }
 }
 
@@ -43,21 +70,21 @@ impl RULE {
                 .collect(),
         }
     }
+
+    fn get_ranges(&self) -> &Vec<RANGE> {
+        &self.ranges
+    }
 }
 
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//todo: Check if there is invalid value and return if found
-fn find_invalid() -> usize {
-    0
-}
-
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut error_rate = 0;
     let mut rules: Vec<RULE> = Vec::new();
     let mut section = SETCTIONS::Rules;
+    let mut valid_range: Vec<RANGE> = Vec::new();
     //let mut my_ticket: Vec<usize> = Vec::new();
 
     let re = Regex::new(r"\d+-\d+").unwrap();
@@ -77,6 +104,15 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
             SETCTIONS::YourTicket => {
                 if line.starts_with("nearby") {
                     section = SETCTIONS::NearbyTicket;
+
+                    // update the valid range as we are going to check against it with nearby tickets
+                    for range in rules.iter().map(|r| r.get_ranges()).flatten() {
+                        // println!("range to check is: {:?}", range);
+                        if !range.update(&mut valid_range) {
+                            valid_range.push(*range);
+                        }
+                    }
+                    //println!("The valid_range is {:#?}", valid_range);
                 }
                 /* don't need to use my ticket in question 1
                 my_ticket = line
@@ -86,9 +122,17 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
                 */
             }
             SETCTIONS::NearbyTicket => {
-                //todo: figure out a good algorithm to find invalid field
-                if true {
-                    error_rate += find_invalid();
+                for num in line.split(',').map(|n| n.parse().unwrap()) {
+                    let mut outside = true;
+                    for r in &valid_range {
+                        if r.includes(num) {
+                            outside = false;
+                            break;
+                        }
+                    }
+                    if outside {
+                        error_rate += num;
+                    }
                 }
             }
         }
@@ -128,6 +172,18 @@ mod tests {
     55,2,20
     38,6,12";
 
+    static TEST_INPUT2: &str = r"class: 0-1 or 4-19
+    row: 0-5 or 8-19
+    seat: 0-13 or 16-19
+    
+    your ticket:
+    11,12,13
+    
+    nearby tickets:
+    3,9,18
+    15,1,5
+    5,14,9";
+
     #[test]
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
@@ -136,8 +192,8 @@ mod tests {
     }
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+        let data: Vec<String> = TEST_INPUT2.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(Ok(0), question2(data));
     }
 }
