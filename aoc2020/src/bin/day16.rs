@@ -94,6 +94,24 @@ fn get_rules(data: String, re: &Regex) -> (Vec<RULE>, Vec<RANGE>) {
     (rules, valid_range)
 }
 
+fn filter_invalid(data: String, valid_range: Vec<RANGE>) -> Vec<usize> {
+    let mut invalid = Vec::new();
+    for line in data.lines().skip(1) {
+        for num in line.split(',').map(|n| n.parse().unwrap()) {
+            let mut outside = true;
+            for r in &valid_range {
+                if r.includes(num) {
+                    outside = false;
+                    break;
+                }
+            }
+            if outside {
+                invalid.push(num);
+            }
+        }
+    }
+    invalid
+}
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     let re = Regex::new(r"\d+-\d+").unwrap();
     let (rules, valid_range) = get_rules(data[0].to_owned(), &re);
@@ -104,32 +122,17 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
         .split(',')
         .map(|c| c.parse::<usize>().unwrap())
         .collect();
+    //println!("my ticket is {:?}", my_ticket);
 
-    println!("my ticket is {:?}", my_ticket);
     Err("Cannot find second number.")
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    let mut error_rate = 0;
-
     let re = Regex::new(r"\d+-\d+").unwrap();
     let (_rules, valid_range) = get_rules(data[0].to_owned(), &re);
-    for line in data[2].lines().skip(1) {
-        for num in line.split(',').map(|n| n.parse().unwrap()) {
-            let mut outside = true;
-            for r in &valid_range {
-                if r.includes(num) {
-                    outside = false;
-                    break;
-                }
-            }
-            if outside {
-                error_rate += num;
-            }
-        }
-    }
+    let invalid = filter_invalid(data[2].to_owned(), valid_range);
 
-    Ok(error_rate)
+    Ok(invalid.iter().sum())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
