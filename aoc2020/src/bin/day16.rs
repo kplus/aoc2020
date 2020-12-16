@@ -1,6 +1,7 @@
 use std::error::Error;
 
 use aoc2020::*;
+use regex::Regex;
 
 enum SETCTIONS {
     Rules,
@@ -8,17 +9,22 @@ enum SETCTIONS {
     NearbyTicket,
 }
 
+#[derive(Debug)]
 struct RULE {
-    field: String,               // string of filed name
-    ranges: Vec<(usize, usize)>, // list of valid ranges
+    field: String,           // string of filed name
+    ranges: Vec<Vec<usize>>, // list of valid ranges
 }
 
 impl RULE {
-    //todo: Fill a RULE structure from string
-    fn from_str(s: String) -> Self {
+    // Fill a RULE structure from string
+    fn from_str(s: String, re: &Regex) -> Self {
+        //println!("Filling rule with string {:#?}", s);
         RULE {
-            field: String::from("new"),
-            ranges: Vec::new(),
+            field: String::from(s.split(':').next().unwrap()),
+            ranges: re
+                .captures_iter(s.as_str())
+                .map(|c| c[0].split('-').map(|c| c.parse().unwrap()).collect())
+                .collect(),
         }
     }
 }
@@ -38,14 +44,19 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut section = SETCTIONS::Rules;
     //let mut my_ticket: Vec<usize> = Vec::new();
 
+    let re = Regex::new(r"\d+-\d+").unwrap();
     for line in data {
+        if line.is_empty() {
+            continue;
+        }
         match section {
             SETCTIONS::Rules => {
                 if line.starts_with("your") {
                     section = SETCTIONS::YourTicket;
                     continue;
                 }
-                rules.push(RULE::from_str(line));
+                rules.push(RULE::from_str(line, &re));
+                //println!("current rule is {:#?}", rules);
             }
             SETCTIONS::YourTicket => {
                 if line.starts_with("nearby") {
@@ -72,7 +83,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
