@@ -32,7 +32,8 @@ impl RANGE {
         n <= self.max && n >= self.min
     }
     // Update overlapped valid range with current range
-    // return false if there is no overlap
+    // return false if there is no overlap.
+    // it can't return early as it has to update all valid ranges
     fn update(&self, valid: &mut Vec<RANGE>) -> bool {
         let mut overlap = false;
         for v in valid {
@@ -74,64 +75,56 @@ impl RULE {
     }
 }
 
+fn get_rules(data: String, re: &Regex) -> (Vec<RULE>, Vec<RANGE>) {
+    let mut rules: Vec<RULE> = Vec::new();
+    let mut valid_range: Vec<RANGE> = Vec::new();
+    for line in data.lines() {
+        if line.starts_with("your") {
+            break;
+        }
+        rules.push(RULE::from_str(line.to_string(), &re));
+        //println!("current rule is {:#?}", rules);
+    }
+    // update the valid range as we are going to check against it with nearby tickets
+    for range in rules.iter().map(|r| r.get_ranges()).flatten() {
+        if !range.update(&mut valid_range) {
+            valid_range.push(*range);
+        }
+    }
+    (rules, valid_range)
+}
+
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
+    let re = Regex::new(r"\d+-\d+").unwrap();
+    let (rules, valid_range) = get_rules(data[0].to_owned(), &re);
+    let my_ticket: Vec<usize> = data[1]
+        .lines()
+        .skip(1)
+        .collect::<String>()
+        .split(',')
+        .map(|c| c.parse::<usize>().unwrap())
+        .collect();
+
+    println!("my ticket is {:?}", my_ticket);
     Err("Cannot find second number.")
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut error_rate = 0;
-    let mut rules: Vec<RULE> = Vec::new();
-    let mut section = SETCTIONS::Rules;
-    let mut valid_range: Vec<RANGE> = Vec::new();
-    let mut my_ticket: Vec<usize> = Vec::new();
 
     let re = Regex::new(r"\d+-\d+").unwrap();
-    for line in data {
-        if line.is_empty() {
-            continue;
-        }
-        match section {
-            SETCTIONS::Rules => {
-                if line.starts_with("your") {
-                    section = SETCTIONS::YourTicket;
-                    continue;
+    let (_rules, valid_range) = get_rules(data[0].to_owned(), &re);
+    for line in data[2].lines().skip(1) {
+        for num in line.split(',').map(|n| n.parse().unwrap()) {
+            let mut outside = true;
+            for r in &valid_range {
+                if r.includes(num) {
+                    outside = false;
+                    break;
                 }
-                rules.push(RULE::from_str(line, &re));
-                //println!("current rule is {:#?}", rules);
             }
-            SETCTIONS::YourTicket => {
-                if line.starts_with("nearby") {
-                    section = SETCTIONS::NearbyTicket;
-
-                    // update the valid range as we are going to check against it with nearby tickets
-                    for range in rules.iter().map(|r| r.get_ranges()).flatten() {
-                        // println!("range to check is: {:?}", range);
-                        if !range.update(&mut valid_range) {
-                            valid_range.push(*range);
-                        }
-                    }
-                    //println!("The valid_range is {:#?}", valid_range);
-                    continue;
-                }
-                my_ticket = line
-                    .split(',')
-                    .map(|c| c.parse::<usize>().unwrap())
-                    .collect();
-                println!("my ticket is {:?}", my_ticket);
-            }
-            SETCTIONS::NearbyTicket => {
-                for num in line.split(',').map(|n| n.parse().unwrap()) {
-                    let mut outside = true;
-                    for r in &valid_range {
-                        if r.includes(num) {
-                            outside = false;
-                            break;
-                        }
-                    }
-                    if outside {
-                        error_rate += num;
-                    }
-                }
+            if outside {
+                error_rate += num;
             }
         }
     }
@@ -140,7 +133,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
-    let data = load_file()?;
+    let data = load_file_by_p()?;
     //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
@@ -158,34 +151,37 @@ mod tests {
     use super::*;
 
     static TEST_INPUT: &str = r"class: 1-3 or 5-7
-    row: 6-11 or 33-44
-    seat: 13-40 or 45-50
-    
-    your ticket:
-    7,1,14
-    
-    nearby tickets:
-    7,3,47
-    40,4,50
-    55,2,20
-    38,6,12";
+row: 6-11 or 33-44
+seat: 13-40 or 45-50
+
+your ticket:
+7,1,14
+
+nearby tickets:
+7,3,47
+40,4,50
+55,2,20
+38,6,12";
 
     static TEST_INPUT2: &str = r"class: 0-1 or 4-19
-    row: 0-5 or 8-19
-    seat: 0-13 or 16-19
-    
-    your ticket:
-    11,12,13
-    
-    nearby tickets:
-    3,9,18
-    15,1,5
-    5,14,9";
+row: 0-5 or 8-19
+seat: 0-13 or 16-19
+
+your ticket:
+11,12,13
+
+nearby tickets:
+3,9,18
+15,1,5
+5,14,9";
 
     #[test]
     fn test_question1() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
+        let data: Vec<String> = TEST_INPUT
+            .split("\n\n")
+            .map(|s| s.trim().to_string())
+            .collect();
+        println!("data is {:#?}", data);
         assert_eq!(Ok(71), question1(data));
     }
     #[test]
