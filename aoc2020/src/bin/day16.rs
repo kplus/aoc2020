@@ -2,17 +2,72 @@ use std::error::Error;
 
 use aoc2020::*;
 
+enum SETCTIONS {
+    Rules,
+    YourTicket,
+    NearbyTicket,
+}
+
 struct RULE {
-    filed: String,               // string of filed name
+    field: String,               // string of filed name
     ranges: Vec<(usize, usize)>, // list of valid ranges
+}
+
+impl RULE {
+    //todo: Fill a RULE structure from string
+    fn from_str(s: String) -> Self {
+        RULE {
+            field: String::from("new"),
+            ranges: Vec::new(),
+        }
+    }
 }
 
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
+//todo: Check if there is invalid value and return if found
+fn find_invalid() -> usize {
+    0
+}
+
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find first number.")
+    let mut error_rate = 0;
+    let mut rules: Vec<RULE> = Vec::new();
+    let mut section = SETCTIONS::Rules;
+    //let mut my_ticket: Vec<usize> = Vec::new();
+
+    for line in data {
+        match section {
+            SETCTIONS::Rules => {
+                if line.starts_with("your") {
+                    section = SETCTIONS::YourTicket;
+                    continue;
+                }
+                rules.push(RULE::from_str(line));
+            }
+            SETCTIONS::YourTicket => {
+                if line.starts_with("nearby") {
+                    section = SETCTIONS::NearbyTicket;
+                }
+                /* don't need to use my ticket in question 1
+                my_ticket = line
+                    .split(',')
+                    .map(|c| c.parse::<usize>().unwrap())
+                    .collect();
+                */
+            }
+            SETCTIONS::NearbyTicket => {
+                //todo: figure out a good algorithm to find invalid field
+                if true {
+                    error_rate += find_invalid();
+                }
+            }
+        }
+    }
+
+    Ok(error_rate)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
