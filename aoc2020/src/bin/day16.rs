@@ -85,7 +85,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut rules: Vec<RULE> = Vec::new();
     let mut section = SETCTIONS::Rules;
     let mut valid_range: Vec<RANGE> = Vec::new();
-    //let mut my_ticket: Vec<usize> = Vec::new();
+    let mut my_ticket: Vec<usize> = Vec::new();
 
     let re = Regex::new(r"\d+-\d+").unwrap();
     for line in data {
@@ -113,13 +113,13 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
                         }
                     }
                     //println!("The valid_range is {:#?}", valid_range);
+                    continue;
                 }
-                /* don't need to use my ticket in question 1
                 my_ticket = line
                     .split(',')
                     .map(|c| c.parse::<usize>().unwrap())
                     .collect();
-                */
+                println!("my ticket is {:?}", my_ticket);
             }
             SETCTIONS::NearbyTicket => {
                 for num in line.split(',').map(|n| n.parse().unwrap()) {
