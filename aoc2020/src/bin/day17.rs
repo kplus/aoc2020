@@ -8,7 +8,7 @@ struct CUBE {
     coordinate_x: usize,
     coordinate_y: usize,
     coordinate_z: usize,
-    active: bool,
+    pre_active: bool,
     neigbhor_count: usize,
 }
 impl CUBE {
@@ -17,13 +17,13 @@ impl CUBE {
             coordinate_x,
             coordinate_y,
             coordinate_z,
-            active: false,
+            pre_active: false,
             neigbhor_count: 1,
         }
     }
 
-    fn set_active(&mut self) {
-        self.active = true;
+    fn previous_active(&mut self) {
+        self.pre_active = true;
     }
 
     fn add_neighbor_count(&mut self) {
@@ -34,7 +34,15 @@ impl CUBE {
         for x in 0..3 {
             for y in 0..3 {
                 for z in 0..3 {
-                    if x | y | z != 0 {
+                    if x == 1 && y == 1 && z == 1 {
+                        grid.get_mut(&(
+                            self.coordinate_x + 1,
+                            self.coordinate_y + 1,
+                            self.coordinate_z + 1,
+                        ))
+                        .unwrap()
+                        .previous_active();
+                    } else {
                         let coordinate_x = self.coordinate_x + x;
                         let coordinate_y = self.coordinate_y + y;
                         let coordinate_z = self.coordinate_z + z;
@@ -83,9 +91,8 @@ fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize), CUBE> {
 
     for (y, line_x) in data.iter().enumerate() {
         for (x, state) in line_x.chars().enumerate() {
-            grid.insert((x, y, 0), CUBE::new(x, y, 0));
             if state == '#' {
-                grid.get_mut(&(x, y, 0)).unwrap().set_active();
+                grid.insert((x, y, 0), CUBE::new(x, y, 0));
             }
         }
     }
