@@ -12,16 +12,25 @@ struct CUBE {
     neigbhor_count: usize,
 }
 impl CUBE {
-    fn new(coordinate_x: usize, coordinate_y: usize, coordinate_z: usize) -> Self {
+    fn new(
+        coordinate_x: usize,
+        coordinate_y: usize,
+        coordinate_z: usize,
+        pre_active: bool,
+        neigbhor_count: usize,
+    ) -> Self {
         CUBE {
             coordinate_x,
             coordinate_y,
             coordinate_z,
-            pre_active: false,
-            neigbhor_count: 1,
+            pre_active,
+            neigbhor_count,
         }
     }
 
+    fn check_active(&self) -> bool {
+        self.neigbhor_count == 3 || (self.neigbhor_count == 2 && self.pre_active)
+    }
     fn previous_active(&mut self) {
         self.pre_active = true;
     }
@@ -34,19 +43,23 @@ impl CUBE {
         for x in 0..3 {
             for y in 0..3 {
                 for z in 0..3 {
+                    let coordinate_x = self.coordinate_x + x;
+                    let coordinate_y = self.coordinate_y + y;
+                    let coordinate_z = self.coordinate_z + z;
+                    let key = (coordinate_x, coordinate_y, coordinate_z);
                     if x == 1 && y == 1 && z == 1 {
-                        grid.get_mut(&(
-                            self.coordinate_x + 1,
-                            self.coordinate_y + 1,
-                            self.coordinate_z + 1,
-                        ))
-                        .unwrap()
-                        .previous_active();
+                        match grid.get_mut(&key) {
+                            Some(cube) => {
+                                cube.previous_active();
+                            }
+                            None => {
+                                grid.insert(
+                                    key,
+                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z, true, 0),
+                                );
+                            }
+                        }
                     } else {
-                        let coordinate_x = self.coordinate_x + x;
-                        let coordinate_y = self.coordinate_y + y;
-                        let coordinate_z = self.coordinate_z + z;
-                        let key = (coordinate_x, coordinate_y, coordinate_z);
                         match grid.get_mut(&key) {
                             Some(cube) => {
                                 cube.add_neighbor_count();
@@ -54,7 +67,7 @@ impl CUBE {
                             None => {
                                 grid.insert(
                                     key,
-                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z),
+                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z, false, 1),
                                 );
                             }
                         }
@@ -79,8 +92,9 @@ fn cycle(old_grid: HashMap<(usize, usize, usize), CUBE>) -> HashMap<(usize, usiz
         cube.propogate(&mut grid);
     }
 
-    //todo: retain only active ones
-    //grid.retain(|&k,&v|);
+    grid.retain(|_, v| v.check_active());
+
+    //println!("The current grid is {:#?}", grid);
 
     grid
 }
@@ -92,7 +106,7 @@ fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize), CUBE> {
     for (y, line_x) in data.iter().enumerate() {
         for (x, state) in line_x.chars().enumerate() {
             if state == '#' {
-                grid.insert((x, y, 0), CUBE::new(x, y, 0));
+                grid.insert((x, y, 0), CUBE::new(x, y, 0, false, 0));
             }
         }
     }
@@ -102,7 +116,7 @@ fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize), CUBE> {
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     const ROUND: usize = 6;
     let mut grid: HashMap<(usize, usize, usize), CUBE> = init_grid(data);
-    println!("Init grid is {:#?}", grid);
+    //println!("Init grid is {:#?}, length is {}", grid, grid.len());
     for _i in 0..ROUND {
         grid = cycle(grid);
     }
@@ -112,7 +126,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
