@@ -19,30 +19,8 @@ impl RANGE {
         }
     }
 
-    fn no_overlaps(&self, valid: &RANGE) -> bool {
-        valid.max < self.min || valid.min > self.max
-    }
-
     fn includes(&self, n: usize) -> bool {
         n <= self.max && n >= self.min
-    }
-    // Update overlapped valid range with current range
-    // return false if there is no overlap.
-    // it can't return early as it has to update all valid ranges
-    fn update(&self, valid: &mut Vec<RANGE>) -> bool {
-        let mut overlap = false;
-        for v in valid {
-            if !self.no_overlaps(v) {
-                if self.includes(v.min) {
-                    v.min = self.min;
-                }
-                if self.includes(v.max) {
-                    v.max = self.max;
-                }
-                overlap = true;
-            }
-        }
-        overlap
     }
 }
 
@@ -68,11 +46,18 @@ impl RULE {
     fn get_ranges(&self) -> &Vec<RANGE> {
         &self.ranges
     }
+
+    fn obay(&self, num: usize) -> bool {
+        let mut ret = false;
+        for range in self.ranges.iter() {
+            ret = ret || range.includes(num);
+        }
+        ret
+    }
 }
 
-fn get_rules(data: String, re: &Regex) -> (Vec<RULE>, Vec<RANGE>) {
+fn get_rules(data: String, re: &Regex) -> Vec<RULE> {
     let mut rules: Vec<RULE> = Vec::new();
-    let mut valid_range: Vec<RANGE> = Vec::new();
     for line in data.lines() {
         if line.starts_with("your") {
             break;
@@ -80,23 +65,17 @@ fn get_rules(data: String, re: &Regex) -> (Vec<RULE>, Vec<RANGE>) {
         rules.push(RULE::from_str(line.to_string(), &re));
         //println!("current rule is {:#?}", rules);
     }
-    // update the valid range as we are going to check against it with nearby tickets
-    for range in rules.iter().map(|r| r.get_ranges()).flatten() {
-        if !range.update(&mut valid_range) {
-            valid_range.push(*range);
-        }
-    }
-    (rules, valid_range)
+    rules
 }
 
-fn filter_invalid(data: String, valid_range: Vec<RANGE>) -> (Vec<usize>, usize) {
+fn filter_invalid(data: String, rules: Vec<RULE>) -> (Vec<usize>, usize) {
     let mut invalid_lines = Vec::new();
     let mut invalid = 0;
     for (i, line) in data.lines().enumerate().skip(1) {
         for num in line.split(',').map(|n| n.parse().unwrap()) {
             let mut outside = true;
-            for r in &valid_range {
-                if r.includes(num) {
+            for r in &rules {
+                if r.obay(num) {
                     outside = false;
                     break;
                 }
@@ -141,10 +120,10 @@ fn confirm_rule(
         }
     }
 }
-
+/*
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     let re = Regex::new(r"\d+-\d+").unwrap();
-    let (rules, valid_range) = get_rules(data[0].to_owned(), &re);
+    let rules = get_rules(data[0].to_owned(), &re);
     let my_ticket: Vec<usize> = data[1]
         .lines()
         .skip(1)
@@ -163,7 +142,7 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
         matrix.insert(rule.field.to_owned(), mask.to_owned());
     }
 
-    let (invalid_line, _invalid) = filter_invalid(data[2].to_owned(), valid_range);
+    let (invalid_line, _invalid) = filter_invalid(data[2].to_owned(), rules);
     for (i, lines) in data[2].lines().enumerate().skip(1) {
         let index = i - 1;
         if invalid_line.contains(&index) {
@@ -203,11 +182,11 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     }
     Ok(product)
 }
-
+*/
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let re = Regex::new(r"\d+-\d+").unwrap();
-    let (_rules, valid_range) = get_rules(data[0].to_owned(), &re);
-    let (_invalid_line, invalid) = filter_invalid(data[2].to_owned(), valid_range);
+    let rules = get_rules(data[0].to_owned(), &re);
+    let (_invalid_line, invalid) = filter_invalid(data[2].to_owned(), rules);
 
     Ok(invalid)
 }
@@ -219,10 +198,12 @@ fn main() -> Result<(), Box<dyn Error>> {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
+    /*
     match question2(data) {
         Ok(x) => println!("The sequency from position {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
+    */
     Ok(())
 }
 
@@ -263,6 +244,7 @@ nearby tickets:
             .collect();
         assert_eq!(Ok(71), question1(data));
     }
+    /*
     #[test]
     fn test_question2() {
         let data: Vec<String> = TEST_INPUT2
@@ -270,6 +252,7 @@ nearby tickets:
             .map(|s| s.trim().to_string())
             .collect();
 
-        assert_eq!(Ok(0), question2(data));
+        assert_eq!(Ok(1), question2(data));
     }
+    */
 }
