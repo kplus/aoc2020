@@ -3,12 +3,28 @@ use std::error::Error;
 
 use aoc2020::*;
 
+#[derive(Debug)]
 struct CUBE {
     coordinate_x: usize,
     coordinate_y: usize,
     coordinate_z: usize,
     active: bool,
     neigbhor_count: usize,
+}
+impl CUBE {
+    fn new(coordinate_x: usize, coordinate_y: usize, coordinate_z: usize) -> Self {
+        CUBE {
+            coordinate_x,
+            coordinate_y,
+            coordinate_z,
+            active: false,
+            neigbhor_count: 0,
+        }
+    }
+
+    fn set_active(&mut self) {
+        self.active = true;
+    }
 }
 
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
@@ -19,20 +35,30 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
 // [in]     the existing grid
 // [out]    new grid after cycle
 fn cycle(old_grid: HashMap<(usize, usize, usize), CUBE>) -> HashMap<(usize, usize, usize), CUBE> {
-    let grid: HashMap<(usize, usize, usize), CUBE> = cycle(old_grid);
+    let mut grid: HashMap<(usize, usize, usize), CUBE> = HashMap::new();
     grid
 }
 
-//todo: Initilise grid from input sting
+// Initilise grid from input sting
 fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize), CUBE> {
     let mut grid: HashMap<(usize, usize, usize), CUBE> = HashMap::new();
+
+    for (y, line_x) in data.iter().enumerate() {
+        for (x, state) in line_x.chars().enumerate() {
+            grid.insert((x, y, 0), CUBE::new(x, y, 0));
+            if state == '#' {
+                grid.get_mut(&(x, y, 0)).unwrap().set_active();
+            }
+        }
+    }
     grid
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     const ROUND: usize = 6;
     let mut grid: HashMap<(usize, usize, usize), CUBE> = init_grid(data);
-    for i in 0..ROUND {
+    println!("Init grid is {:#?}", grid);
+    for _i in 0..ROUND {
         grid = cycle(grid);
     }
 
