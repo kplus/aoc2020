@@ -8,6 +8,7 @@ struct CUBE {
     coordinate_x: usize,
     coordinate_y: usize,
     coordinate_z: usize,
+    coordinate_w: usize,
     pre_active: bool,
     neigbhor_count: usize,
 }
@@ -16,6 +17,7 @@ impl CUBE {
         coordinate_x: usize,
         coordinate_y: usize,
         coordinate_z: usize,
+        coordinate_w: usize,
         pre_active: bool,
         neigbhor_count: usize,
     ) -> Self {
@@ -23,6 +25,7 @@ impl CUBE {
             coordinate_x,
             coordinate_y,
             coordinate_z,
+            coordinate_w,
             pre_active,
             neigbhor_count,
         }
@@ -39,36 +42,53 @@ impl CUBE {
         self.neigbhor_count += 1;
     }
 
-    fn propogate(&self, grid: &mut HashMap<(usize, usize, usize), CUBE>) {
+    fn propogate(&self, grid: &mut HashMap<(usize, usize, usize, usize), CUBE>) {
         for x in 0..3 {
             for y in 0..3 {
                 for z in 0..3 {
-                    let coordinate_x = self.coordinate_x + x;
-                    let coordinate_y = self.coordinate_y + y;
-                    let coordinate_z = self.coordinate_z + z;
-                    let key = (coordinate_x, coordinate_y, coordinate_z);
-                    if x == 1 && y == 1 && z == 1 {
-                        match grid.get_mut(&key) {
-                            Some(cube) => {
-                                cube.previous_active();
+                    for w in 0..3 {
+                        let coordinate_x = self.coordinate_x + x;
+                        let coordinate_y = self.coordinate_y + y;
+                        let coordinate_z = self.coordinate_z + z;
+                        let coordinate_w = self.coordinate_w + w;
+                        let key = (coordinate_x, coordinate_y, coordinate_z, coordinate_w);
+                        if x == 1 && y == 1 && z == 1 && w == 1 {
+                            match grid.get_mut(&key) {
+                                Some(cube) => {
+                                    cube.previous_active();
+                                }
+                                None => {
+                                    grid.insert(
+                                        key,
+                                        CUBE::new(
+                                            coordinate_x,
+                                            coordinate_y,
+                                            coordinate_z,
+                                            coordinate_w,
+                                            true,
+                                            0,
+                                        ),
+                                    );
+                                }
                             }
-                            None => {
-                                grid.insert(
-                                    key,
-                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z, true, 0),
-                                );
-                            }
-                        }
-                    } else {
-                        match grid.get_mut(&key) {
-                            Some(cube) => {
-                                cube.add_neighbor_count();
-                            }
-                            None => {
-                                grid.insert(
-                                    key,
-                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z, false, 1),
-                                );
+                        } else {
+                            match grid.get_mut(&key) {
+                                Some(cube) => {
+                                    cube.add_neighbor_count();
+                                }
+                                None => {
+                                    grid.insert(
+                                        key,
+                                        CUBE::new(
+                                            coordinate_x,
+                                            coordinate_y,
+                                            coordinate_z,
+                                            coordinate_w,
+                                            false,
+                                            1,
+                                        ),
+                                    );
+                                }
                             }
                         }
                     }
@@ -78,15 +98,13 @@ impl CUBE {
     }
 }
 
-fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
-}
-
 // Do a cycle and proprgate the enenry
 // [in]     the existing grid
 // [out]    new grid after cycle
-fn cycle(old_grid: HashMap<(usize, usize, usize), CUBE>) -> HashMap<(usize, usize, usize), CUBE> {
-    let mut grid: HashMap<(usize, usize, usize), CUBE> = HashMap::new();
+fn cycle(
+    old_grid: HashMap<(usize, usize, usize, usize), CUBE>,
+) -> HashMap<(usize, usize, usize, usize), CUBE> {
+    let mut grid: HashMap<(usize, usize, usize, usize), CUBE> = HashMap::new();
 
     for cube in old_grid.values() {
         cube.propogate(&mut grid);
@@ -100,22 +118,22 @@ fn cycle(old_grid: HashMap<(usize, usize, usize), CUBE>) -> HashMap<(usize, usiz
 }
 
 // Initilise grid from input sting
-fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize), CUBE> {
-    let mut grid: HashMap<(usize, usize, usize), CUBE> = HashMap::new();
+fn init_grid(data: Vec<String>) -> HashMap<(usize, usize, usize, usize), CUBE> {
+    let mut grid: HashMap<(usize, usize, usize, usize), CUBE> = HashMap::new();
 
     for (y, line_x) in data.iter().enumerate() {
         for (x, state) in line_x.chars().enumerate() {
             if state == '#' {
-                grid.insert((x, y, 0), CUBE::new(x, y, 0, false, 0));
+                grid.insert((x, y, 0, 0), CUBE::new(x, y, 0, 0, false, 0));
             }
         }
     }
     grid
 }
 
-fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+fn question(data: Vec<String>) -> Result<usize, &'static str> {
     const ROUND: usize = 6;
-    let mut grid: HashMap<(usize, usize, usize), CUBE> = init_grid(data);
+    let mut grid: HashMap<(usize, usize, usize, usize), CUBE> = init_grid(data);
     //println!("Init grid is {:#?}, length is {}", grid, grid.len());
     for _i in 0..ROUND {
         grid = cycle(grid);
@@ -127,12 +145,8 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
     //println!("{:#?}", data);
-    match question1(data.to_owned()) {
-        Ok(x) => println!("The result for question 1 is {}", x),
-        Err(x) => eprintln!("Error processing the input data: {:?}", x),
-    };
-    match question2(data) {
-        Ok(x) => println!("The sequency from position {}", x),
+    match question(data) {
+        Ok(x) => println!("The result for question 2 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
@@ -147,15 +161,17 @@ mod tests {
     ###";
 
     #[test]
+    /*
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
         assert_eq!(Ok(112), question1(data));
     }
+    */
     #[test]
     fn test_question2() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(Ok(848), question(data));
     }
 }
