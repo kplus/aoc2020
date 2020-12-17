@@ -18,12 +18,42 @@ impl CUBE {
             coordinate_y,
             coordinate_z,
             active: false,
-            neigbhor_count: 0,
+            neigbhor_count: 1,
         }
     }
 
     fn set_active(&mut self) {
         self.active = true;
+    }
+
+    fn add_neighbor_count(&mut self) {
+        self.neigbhor_count += 1;
+    }
+
+    fn propogate(&self, grid: &mut HashMap<(usize, usize, usize), CUBE>) {
+        for x in 0..3 {
+            for y in 0..3 {
+                for z in 0..3 {
+                    if x | y | z != 0 {
+                        let coordinate_x = self.coordinate_x + x;
+                        let coordinate_y = self.coordinate_y + y;
+                        let coordinate_z = self.coordinate_z + z;
+                        let key = (coordinate_x, coordinate_y, coordinate_z);
+                        match grid.get_mut(&key) {
+                            Some(cube) => {
+                                cube.add_neighbor_count();
+                            }
+                            None => {
+                                grid.insert(
+                                    key,
+                                    CUBE::new(coordinate_x, coordinate_y, coordinate_z),
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
 
@@ -31,11 +61,19 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//todo: Do a cycle and proprgate the enenry
+// Do a cycle and proprgate the enenry
 // [in]     the existing grid
 // [out]    new grid after cycle
 fn cycle(old_grid: HashMap<(usize, usize, usize), CUBE>) -> HashMap<(usize, usize, usize), CUBE> {
     let mut grid: HashMap<(usize, usize, usize), CUBE> = HashMap::new();
+
+    for cube in old_grid.values() {
+        cube.propogate(&mut grid);
+    }
+
+    //todo: retain only active ones
+    //grid.retain(|&k,&v|);
+
     grid
 }
 
