@@ -1,13 +1,8 @@
+use std::collections::HashMap;
 use std::error::Error;
 
 use aoc2020::*;
 use regex::Regex;
-
-enum SETCTIONS {
-    Rules,
-    YourTicket,
-    NearbyTicket,
-}
 
 #[derive(Debug, Clone, Copy)]
 struct RANGE {
@@ -94,9 +89,10 @@ fn get_rules(data: String, re: &Regex) -> (Vec<RULE>, Vec<RANGE>) {
     (rules, valid_range)
 }
 
-fn filter_invalid(data: String, valid_range: Vec<RANGE>) -> Vec<usize> {
-    let mut invalid = Vec::new();
-    for line in data.lines().skip(1) {
+fn filter_invalid(data: String, valid_range: Vec<RANGE>) -> (Vec<usize>, usize) {
+    let mut invalid_lines = Vec::new();
+    let mut invalid = 0;
+    for (i, line) in data.lines().enumerate().skip(1) {
         for num in line.split(',').map(|n| n.parse().unwrap()) {
             let mut outside = true;
             for r in &valid_range {
@@ -106,12 +102,46 @@ fn filter_invalid(data: String, valid_range: Vec<RANGE>) -> Vec<usize> {
                 }
             }
             if outside {
-                invalid.push(num);
+                invalid_lines.push(i - 1);
+                invalid += num;
             }
         }
     }
-    invalid
+    (invalid_lines, invalid)
 }
+
+fn confirm_rule(
+    mut matrix: &mut HashMap<String, Vec<usize>>,
+    mut positions: &mut HashMap<String, usize>,
+    rule_name: String,
+    index: usize,
+) {
+    let change = matrix.get_mut(&rule_name).unwrap();
+    change[index] = 0;
+    if change.iter().sum::<usize>() == 1 {
+        let mut pos = 0;
+        for i in change {
+            if *i == 0 {
+                pos += 1;
+            } else {
+                break;
+            }
+        }
+        //println!(
+        //    "confirmed position {} for rule {} found after {} be removed",
+        //    pos, rule_name, index
+        //);
+        // got a position of rule, update others
+        matrix.remove(&rule_name);
+        positions.insert(rule_name.to_owned(), pos);
+
+        let matrix_clone = matrix.to_owned();
+        for key in matrix_clone.keys() {
+            confirm_rule(&mut matrix, &mut positions, key.to_string(), pos);
+        }
+    }
+}
+
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     let re = Regex::new(r"\d+-\d+").unwrap();
     let (rules, valid_range) = get_rules(data[0].to_owned(), &re);
@@ -122,17 +152,64 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
         .split(',')
         .map(|c| c.parse::<usize>().unwrap())
         .collect();
-    //println!("my ticket is {:?}", my_ticket);
+    let rule_count = rules.len();
+    let mask = vec![1; rule_count];
 
-    Err("Cannot find second number.")
+    // Use a matrix to store masks for all rules, initial all 1's
+    let mut matrix: HashMap<String, Vec<usize>> = HashMap::new();
+    // Use another hashmap to store confirmed rule position
+    let mut positions: HashMap<String, usize> = HashMap::new();
+    for rule in &rules {
+        matrix.insert(rule.field.to_owned(), mask.to_owned());
+    }
+
+    let (invalid_line, _invalid) = filter_invalid(data[2].to_owned(), valid_range);
+    for (i, lines) in data[2].lines().enumerate().skip(1) {
+        let index = i - 1;
+        if invalid_line.contains(&index) {
+            continue;
+        }
+
+        // loop through all numbers in a single line
+        // check remain rule in matrix
+        for (pos, num) in lines
+            .split(',')
+            .map(|n| n.parse::<usize>().unwrap())
+            .enumerate()
+        {
+            'next_rule: for rule in &rules {
+                if positions.contains_key(&rule.field) {
+                    continue;
+                }
+                for range in rule.get_ranges() {
+                    if range.includes(num) {
+                        continue 'next_rule;
+                    }
+                }
+                let rule_name = rule.field.to_owned();
+
+                confirm_rule(&mut matrix, &mut positions, rule_name, pos);
+            }
+        }
+        if matrix.is_empty() {
+            break;
+        }
+    }
+    positions.retain(|k, _| k.starts_with("departure"));
+
+    let mut product = 1;
+    for val in positions.values() {
+        product *= my_ticket[*val];
+    }
+    Ok(product)
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let re = Regex::new(r"\d+-\d+").unwrap();
     let (_rules, valid_range) = get_rules(data[0].to_owned(), &re);
-    let invalid = filter_invalid(data[2].to_owned(), valid_range);
+    let (_invalid_line, invalid) = filter_invalid(data[2].to_owned(), valid_range);
 
-    Ok(invalid.iter().sum())
+    Ok(invalid)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -184,12 +261,14 @@ nearby tickets:
             .split("\n\n")
             .map(|s| s.trim().to_string())
             .collect();
-        println!("data is {:#?}", data);
         assert_eq!(Ok(71), question1(data));
     }
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT2.lines().map(|s| s.trim().to_owned()).collect();
+        let data: Vec<String> = TEST_INPUT2
+            .split("\n\n")
+            .map(|s| s.trim().to_string())
+            .collect();
 
         assert_eq!(Ok(0), question2(data));
     }
