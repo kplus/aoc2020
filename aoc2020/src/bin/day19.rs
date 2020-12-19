@@ -82,6 +82,10 @@ impl RULE {
         }
         false
     }
+
+    fn get_len(&self) -> usize {
+        self.pattern[0].len()
+    }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     let rule_map: HashMap<usize, String> = HashMap::from_iter(data[0].lines().map(|s| {
@@ -95,16 +99,22 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     let rule42 = get_rule(&rule_map, &mut rules, 42);
     let rule31 = get_rule(&rule_map, &mut rules, 31);
 
-    println!("the rule 42 is {:#?}", rule42);
-    println!("the rule 31 is {:#?}", rule31);
+    //println!("the rule 42 is {:#?}", rule42);
+    //println!("the rule 31 is {:#?}", rule31);
+
+    let len = rule31.get_len();
 
     let mut count = 0;
     for mut msg in data[1].lines().map(|s| s.trim().to_string()) {
-        //     println!("message {}: ", msg);
+        //println!("message {}: ", msg);
+        if msg.len() % len != 0 {
+            //println!("Invalid length {}, skip", msg.len());
+            continue;
+        }
         let mut fit31 = 0;
         while rule31.fit_end(&msg) && !msg.is_empty() {
             fit31 += 1;
-            msg.truncate(msg.len() - 8);
+            msg.truncate(msg.len() - len);
         }
 
         if fit31 == 0 {
@@ -112,7 +122,7 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
         }
         while rule42.fit_end(&msg) && !msg.is_empty() {
             fit31 -= 1;
-            msg.truncate(msg.len() - 8);
+            msg.truncate(msg.len() - len);
         }
 
         if msg.is_empty() && fit31 < 0 {
@@ -182,14 +192,12 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file_by_p()?;
     //println!("{:#?}", data);
-    /*
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    */
     match question2(data) {
-        Ok(x) => println!("The sequency from position {}", x),
+        Ok(x) => println!("The result for question 2 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
