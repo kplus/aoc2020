@@ -1,56 +1,62 @@
+use std::collections::HashMap;
 use std::error::Error;
+use std::iter::FromIterator;
 
 use aoc2020::*;
 
+#[derive(Clone)]
+struct RULE {
+    count: usize,
+    pattern: Vec<String>,
+}
+
+impl RULE {
+    fn is_empty(&self) -> bool {
+        self.count == 0
+    }
+    fn new() -> Self {
+        RULE {
+            count: 0,
+            pattern: Vec::new(),
+        }
+    }
+    fn obey(&self, s: &str) -> bool {
+        self.pattern.contains(&s.to_string())
+    }
+}
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//doing: Build rule 0 from input string of rules section
+//doing: Build rules from input string of rules section, only return rule 0 for question 1
 // [in]     Paragraph of input strings contain all rules
 // [in]     Mutable rules table
 // [in]     Index of rule to build
-// [out]    Rule 0 as vector of all patterns
-fn build_rules(p: Vec<(usize, String)>, rules: &mut [Vec<String>]) -> Vec<String> {
-    println!("the paragraph is {:#?}", p);
+// [out]    Rule indicated by index as vector of all patterns
+fn get_rule(map: HashMap<usize, String>, rules: &mut [RULE], n: usize) -> RULE {
+    //println!("the paragraph is {:#?}", map);
 
-    let pattern = String::new();
-    let mut rule = Vec::new();
-    rule.push(pattern);
-    rule
+    if rules[n].is_empty() {}
+
+    rules[n].to_owned()
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    println!("Input data are: {:#?}", data);
-    let rule_string: Vec<(usize, String)> = data[0]
-        .lines()
-        .map(|s| {
-            let tmp: Vec<&str> = s.trim().split(':').collect();
-            (tmp[0].parse().unwrap(), tmp[1].to_owned())
-        })
-        .collect();
-    println!("Generated rule String is {:#?}", rule_string);
-    /*
-    let rule_string: Vec<(usize, String)> = data[0]
-        .lines()
-        .map(|s| {
-            let tmp: Vec<&str> = s.split(':').collect();
-            (tmp[0].parse().unwrap(), tmp[1].to_owned())
-        })
-        .collect();
+    let rule_map: HashMap<usize, String> = HashMap::from_iter(data[0].lines().map(|s| {
+        let tmp: Vec<&str> = s.trim().split(':').collect();
+        (tmp[0].parse().unwrap(), tmp[1].to_owned())
+    }));
+    //println!("Generated rule map is {:#?}", rule_map);
 
-    println!("Generated rule String is {:#?}", rule_string);
-    let mut rules: Vec<Vec<String>> = vec![Vec::new(); rule_string.len()];
-    let rule0 = build_rules(rule_string, &mut rules);
+    let mut rules: Vec<RULE> = vec![RULE::new(); rule_map.len()];
+    let rule0 = get_rule(rule_map, &mut rules, 0);
 
     let mut count = 0;
     for msg in data[1].lines() {
-        if rule0.contains(&msg.to_string()) {
+        if rule0.obey(msg) {
             count += 1;
         }
     }
-    */
-    let mut count = 0;
     Ok(count)
 }
 
