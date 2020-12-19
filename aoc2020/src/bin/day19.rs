@@ -26,9 +26,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
         .lines()
         .map(|s| {
             let tmp: Vec<&str> = s.trim().split(':').collect();
-            let index: usize = tmp[0].parse().unwrap();
-            let s_out = tmp[1].to_owned();
-            (index, s_out)
+            (tmp[0].parse().unwrap(), tmp[1].to_owned())
         })
         .collect();
     println!("Generated rule String is {:#?}", rule_string);
