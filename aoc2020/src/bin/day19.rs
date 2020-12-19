@@ -23,22 +23,36 @@ impl RULE {
     fn obey(&self, s: &str) -> bool {
         self.pattern.contains(&s.to_string())
     }
+
+    fn update_end(&mut self, s: String) {
+        self.count = 1;
+        self.pattern.push(s);
+    }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//doing: Build rules from input string of rules section, only return rule 0 for question 1
+//doing: Get rules from input string of rules section
 // [in]     Paragraph of input strings contain all rules
 // [in]     Mutable rules table
-// [in]     Index of rule to build
-// [out]    Rule indicated by index as vector of all patterns
-fn get_rule(map: HashMap<usize, String>, rules: &mut [RULE], n: usize) -> RULE {
+// [in]     Index of rule to get
+// [out]    Rule indicated by index
+fn get_rule(map: HashMap<usize, String>, rules: &mut [RULE], n: usize) -> &RULE {
     //println!("the paragraph is {:#?}", map);
+    let mut rule = &mut rules[n];
 
-    if rules[n].is_empty() {}
+    if rule.is_empty() {
+        let rule_string = map.get(&n).unwrap();
+        if rule_string.contains('"') {
+            let c = rule_string.split('"').nth(1).unwrap().to_string();
+            rule.update_end(c);
+        } else {
+            //todo: update rule from sub rules
+        }
+    }
 
-    rules[n].to_owned()
+    rule
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
