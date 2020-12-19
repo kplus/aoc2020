@@ -20,6 +20,11 @@ impl RULE {
             pattern: Vec::new(),
         }
     }
+
+    fn set(&mut self, other: RULE) {
+        self.count = other.count;
+        self.pattern = other.pattern;
+    }
     fn obey(&self, s: &str) -> bool {
         self.pattern.contains(&s.to_string())
     }
@@ -28,6 +33,9 @@ impl RULE {
         self.count = 1;
         self.pattern.push(s);
     }
+
+    //todo: upate current rule with 2 subrules
+    fn update_subrule(&mut self, first: RULE, second: RULE) {}
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
@@ -38,9 +46,9 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
 // [in]     Mutable rules table
 // [in]     Index of rule to get
 // [out]    Rule indicated by index
-fn get_rule(map: HashMap<usize, String>, rules: &mut [RULE], n: usize) -> &RULE {
+fn get_rule(map: &HashMap<usize, String>, rules: &mut [RULE], n: usize) -> RULE {
     //println!("the paragraph is {:#?}", map);
-    let mut rule = &mut rules[n];
+    let mut rule = rules[n].to_owned();
 
     if rule.is_empty() {
         let rule_string = map.get(&n).unwrap();
@@ -48,11 +56,22 @@ fn get_rule(map: HashMap<usize, String>, rules: &mut [RULE], n: usize) -> &RULE 
             let c = rule_string.split('"').nth(1).unwrap().to_string();
             rule.update_end(c);
         } else {
-            //todo: update rule from sub rules
+            let sub_rules: Vec<&str> = rule_string.split('|').map(|sr| sr.trim()).collect();
+            for sub_rule in sub_rules {
+                let seq: Vec<usize> = sub_rule
+                    .split(' ')
+                    .map(|i| i.parse::<usize>().unwrap())
+                    .collect();
+                let first = seq[0];
+                let second = seq[1];
+                let first_rule = get_rule(&map, rules, first);
+                let second_rule = get_rule(&map, rules, second);
+                rule.update_subrule(first_rule, second_rule);
+            }
         }
     }
-
-    rule
+    rules[n].set(rule);
+    rules[n].to_owned()
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
@@ -63,7 +82,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     //println!("Generated rule map is {:#?}", rule_map);
 
     let mut rules: Vec<RULE> = vec![RULE::new(); rule_map.len()];
-    let rule0 = get_rule(rule_map, &mut rules, 0);
+    let rule0 = get_rule(&rule_map, &mut rules, 0);
 
     let mut count = 0;
     for msg in data[1].lines() {
