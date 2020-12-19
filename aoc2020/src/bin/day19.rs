@@ -72,9 +72,54 @@ impl RULE {
         }
         self.count = self.pattern.len();
     }
+
+    // Check if the rule fits into the end of String
+    fn fit_end(&self, s: &str) -> bool {
+        for pattern in &self.pattern {
+            if s.ends_with(pattern.as_str()) {
+                return true;
+            }
+        }
+        false
+    }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
+    let rule_map: HashMap<usize, String> = HashMap::from_iter(data[0].lines().map(|s| {
+        let tmp: Vec<&str> = s.trim().split(':').collect();
+        (tmp[0].parse().unwrap(), tmp[1].to_owned())
+    }));
+    //println!("Generated rule map is {:#?}", rule_map);
+
+    let mut rules: Vec<RULE> = vec![RULE::new(); MAX_RULE]; // quick fix to use fixed max rules count, as there are skipping numbers in example
+                                                            //let mut rules: Vec<RULE> = vec![RULE::new(); rule_map.len()];
+    let rule42 = get_rule(&rule_map, &mut rules, 42);
+    let rule31 = get_rule(&rule_map, &mut rules, 31);
+
+    println!("the rule 42 is {:#?}", rule42);
+    println!("the rule 31 is {:#?}", rule31);
+
+    let mut count = 0;
+    for mut msg in data[1].lines().map(|s| s.trim().to_string()) {
+        //     println!("message {}: ", msg);
+        let mut fit31 = 0;
+        while rule31.fit_end(&msg) && !msg.is_empty() {
+            fit31 += 1;
+            msg.truncate(msg.len() - 8);
+        }
+
+        if fit31 == 0 {
+            continue;
+        }
+        while rule42.fit_end(&msg) && !msg.is_empty() {
+            fit31 -= 1;
+            msg.truncate(msg.len() - 8);
+        }
+
+        if msg.is_empty() && fit31 < 0 {
+            count += 1;
+        }
+    }
+    Ok(count)
 }
 
 //doing: Get rules from input string of rules section
@@ -115,7 +160,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
         let tmp: Vec<&str> = s.trim().split(':').collect();
         (tmp[0].parse().unwrap(), tmp[1].to_owned())
     }));
-    println!("Generated rule map is {:#?}", rule_map);
+    //println!("Generated rule map is {:#?}", rule_map);
 
     let mut rules: Vec<RULE> = vec![RULE::new(); MAX_RULE]; // quick fix to use fixed max rules count, as there are skipping numbers in example
                                                             //let mut rules: Vec<RULE> = vec![RULE::new(); rule_map.len()];
@@ -137,10 +182,12 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file_by_p()?;
     //println!("{:#?}", data);
+    /*
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
+    */
     match question2(data) {
         Ok(x) => println!("The sequency from position {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
@@ -222,6 +269,7 @@ mod tests {
         //println!("input data is {:#?}", data);
 
         assert_eq!(Ok(2), question1(data));
+
         let data: Vec<String> = TEST_INPUT2
             .split("\n    \n")
             .map(|s| s.trim().to_string())
@@ -231,8 +279,11 @@ mod tests {
     }
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
+        let data: Vec<String> = TEST_INPUT2
+            .split("\n    \n")
+            .map(|s| s.trim().to_string())
+            .collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(Ok(12), question2(data));
     }
 }
