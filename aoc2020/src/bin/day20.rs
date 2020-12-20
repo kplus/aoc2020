@@ -7,7 +7,15 @@ use integer_sqrt::IntegerSquareRoot;
 
 use aoc2020::*;
 
-#[derive(PartialEq, Eq, Hash, Debug)]
+#[derive(PartialEq)]
+enum BorderDirection {
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTUM,
+}
+
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
 struct TILE {
     id: usize,
     //x: isize,
@@ -58,6 +66,20 @@ impl TILE {
     fn get_id(&self) -> usize {
         self.id
     }
+    fn get_border(&self, border: &BorderDirection) -> String {
+        match border {
+            BorderDirection::LEFT => self.left.to_owned(),
+            BorderDirection::RIGHT => self.right.to_owned(),
+            BorderDirection::TOP => self.top.to_owned(),
+            BorderDirection::BOTTUM => self.bottum.to_owned(),
+        }
+    }
+
+    //todo: Check if current tile lines up with the front, if so insert into map
+    fn line_up(&self, s: &String, map: &mut IMAGE) -> bool {
+        // match s {}
+        true
+    }
 }
 
 struct IMAGE {
@@ -80,14 +102,29 @@ impl IMAGE {
         }
     }
 
-    fn get_horizon_range(&self) -> (isize, isize) {
-        (self.x_shift, self.grade as isize + self.x_shift)
+    fn get_end(&self, b: &BorderDirection) -> isize {
+        match b {
+            BorderDirection::LEFT => self.x_shift,
+            BorderDirection::RIGHT => self.grade as isize + self.x_shift,
+            BorderDirection::TOP => self.grade as isize + self.y_shift,
+            BorderDirection::BOTTUM => self.y_shift,
+        }
     }
-    fn get_vertical_range(&self) -> (isize, isize) {
-        (self.y_shift, self.grade as isize + self.y_shift)
+    fn set_range(&mut self, end: isize, b: &BorderDirection) {
+        match b {
+            BorderDirection::LEFT | BorderDirection::RIGHT => {
+                self.x_shift = end + 1 - self.grade as isize
+            }
+            BorderDirection::TOP | BorderDirection::BOTTUM => {
+                self.y_shift = end + 1 - self.grade as isize
+            }
+        };
     }
     fn get_id(&self, x: isize, y: isize) -> usize {
         self.map.get(&(x, y)).unwrap().get_id()
+    }
+    fn get_front(&self, x: isize, b: &BorderDirection) -> String {
+        self.map.get(&(x, 0)).unwrap().get_border(b)
     }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
@@ -97,7 +134,26 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
 //doing: Fill remain TILEs in given dimension
 // This is done by go through one direction until the edge,
 // and go reverse from starting point to edge on the other end
-fn fill_dimension(tiles_pool: &mut HashSet<TILE>, image: &mut IMAGE, horizon: bool) {}
+fn fill_one_direction(
+    tiles_pool: &mut HashSet<TILE>,
+    image: &mut IMAGE,
+    direction: BorderDirection,
+    x: isize,
+) {
+    let end = image.get_end(&direction);
+    let mut front = image.get_front(x, &direction);
+    for i in 0..end {
+        for tile in tiles_pool.iter().cloned() {
+            if tile.line_up(&front, image) {
+                front = tile.get_border(&direction);
+                tiles_pool.remove(&tile);
+                break; // break into next position in the image
+            }
+        }
+        // not line up found, it hits the edge
+        image.set_range(i, &direction);
+    }
+}
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut product = 1;
@@ -105,25 +161,34 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     for s in data {
         tiles_pool.insert(TILE::from_str(s));
     }
-    println!(
-        "the tiles pool is {:#?}, the length is {}",
-        tiles_pool,
-        tiles_pool.len()
-    );
+    //println!(
+    //    "the tiles pool is {:#?}, the length is {}",
+    //    tiles_pool,
+    //    tiles_pool.len()
+    //);
 
     let grade = tiles_pool.len().integer_sqrt();
-    println!("grade is {}", grade);
+    //println!("grade is {}", grade);
     let mut image = IMAGE::new(grade);
 
-    fill_dimension(&mut tiles_pool, &mut image, true);
-
-    let (x_start, x_end) = image.get_horizon_range();
-    for _i in x_start..x_end {
-        fill_dimension(&mut tiles_pool, &mut image, false);
+    fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::RIGHT, 0);
+    let x_start = image.get_end(&BorderDirection::LEFT);
+    if x_start < 0 {
+        // if there is a shift
+        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::LEFT, 0);
+    }
+    let x_end = grade as isize + x_start;
+    for i in x_start..x_end {
+        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::TOP, i);
+        let y_start = image.get_end(&BorderDirection::BOTTUM);
+        if y_start < 0 {
+            // if there is a shift
+            fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::BOTTUM, i);
+        }
     }
 
-    let (y_start, y_end) = image.get_vertical_range();
-
+    let y_start = image.get_end(&BorderDirection::BOTTUM);
+    let y_end = grade as isize + y_start;
     println!(
         "image range is from x {} - {}, y {} - {}",
         x_start, x_end, y_start, y_end
