@@ -18,7 +18,7 @@ fn main() -> Result<(), Box<dyn Error>> {
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     match question2(data) {
-        Ok(x) => println!("The sequency from position {}", x),
+        Ok(x) => println!("The result for question 2 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
