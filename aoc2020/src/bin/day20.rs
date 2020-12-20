@@ -1,22 +1,48 @@
+use std::collections::{HashMap, HashSet};
 use std::error::Error;
+use std::hash::Hash;
 
 use aoc2020::*;
 
+#[derive(PartialEq, Eq, Hash, Debug)]
 struct TILE {
     id: usize,
-    x: usize,
-    y: usize,
-    borders: Vec<String>, // 4 Strings
+    //x: isize,
+    //y: isize,
+    left: String,
+    right: String,
+    top: String,
+    bottum: String,
 }
 
 impl TILE {
-    //todo: Create TILE from block strings
+    // Create TILE from block strings
     fn from_str(s: String) -> Self {
+        //println!("create tile from string {:?}", s);
+        let v: Vec<&str> = s.lines().map(|s| s.trim()).collect();
+
+        let id = v[0]
+            .split(|c| c == ' ' || c == ':')
+            .nth(1)
+            .unwrap()
+            .parse::<usize>()
+            .unwrap();
+        let grade = v.len() - 1;
+        let top = v[1].to_string();
+        let bottum = v[grade].to_string();
+        let mut left = String::new();
+        let mut right = String::new();
+        for line in v.iter().skip(1) {
+            let c: Vec<char> = line.chars().collect();
+            left.push(c[0]);
+            right.push(c[grade - 1]);
+        }
         TILE {
-            id: 0,
-            x: 0,
-            y: 0,
-            borders: Vec::new(),
+            id,
+            left,
+            right,
+            top,
+            bottum,
         }
     }
 
@@ -25,21 +51,84 @@ impl TILE {
 
     //todo: Flip TILE in horizon direction or vertical direction
     fn flip(&mut self, horizon: bool) {}
+
+    fn get_id(&self) -> usize {
+        self.id
+    }
 }
 
 struct IMAGE {
-    left: Vec<String>,
-    right: Vec<String>,
-    top: Vec<String>,
-    buttom: Vec<String>,
+    front: String,                      // the border string to check
+    x_shift: isize,                     // image coordinate origin related to first tile in x-axis
+    y_shift: isize,                     // image coordinate origin related to first tile in y-axis
+    grade: usize,                       // grade of image
+    map: HashMap<(isize, isize), TILE>, // map for confirmed TILEs
+}
+
+impl IMAGE {
+    //todo: Initialization of Image
+    fn new() -> Self {
+        IMAGE {
+            front: String::from(""),
+            x_shift: 0,
+            y_shift: 0,
+            grade: 0,
+            map: HashMap::new(),
+        }
+    }
+
+    fn get_horizon_range(&self) -> (isize, isize) {
+        (self.x_shift, self.grade as isize + self.x_shift)
+    }
+    fn get_vertical_range(&self) -> (isize, isize) {
+        (self.y_shift, self.grade as isize + self.y_shift)
+    }
+    fn get_id(&self, x: isize, y: isize) -> usize {
+        self.map.get(&(x, y)).unwrap().get_id()
+    }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
+//todo: Fill remain TILEs in given dimension
+// This is done by go through one direction until the edge,
+// and go reverse from starting point to edge on the other end
+fn fill_dimension(tiles_pool: &mut HashSet<TILE>, image: &mut IMAGE, horizon: bool) {}
+
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut product = 1;
+    let mut tiles_pool = HashSet::new();
+    for s in data {
+        tiles_pool.insert(TILE::from_str(s));
+    }
+    println!("the tiles pool is {:#?}", tiles_pool);
 
+    let mut image = IMAGE::new();
+
+    fill_dimension(&mut tiles_pool, &mut image, true);
+
+    let (x_start, x_end) = image.get_horizon_range();
+    for _i in x_start..x_end {
+        fill_dimension(&mut tiles_pool, &mut image, false);
+    }
+
+    let (y_start, y_end) = image.get_vertical_range();
+
+    println!(
+        "image range is from x {} - {}, y {} - {}",
+        x_start, x_end, y_start, y_end
+    );
+    for (x, y) in [
+        (x_start, y_start),
+        (x_end, y_start),
+        (x_start, y_end),
+        (x_end, y_end),
+    ]
+    .iter()
+    {
+        product *= image.get_id(*x, *y);
+    }
     Ok(product)
 }
 
@@ -171,8 +260,10 @@ mod tests {
 
     #[test]
     fn test_question1() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
+        let data: Vec<String> = TEST_INPUT
+            .split("\n    \n")
+            .map(|s| s.trim().to_string())
+            .collect();
         assert_eq!(Ok(20899048083289), question1(data));
     }
     #[test]
