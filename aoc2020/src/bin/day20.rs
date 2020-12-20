@@ -9,6 +9,30 @@ struct TILE {
     borders: Vec<String>, // 4 Strings
 }
 
+impl TILE {
+    //todo: Create TILE from block strings
+    fn from_str(s: String) -> Self {
+        TILE {
+            id: 0,
+            x: 0,
+            y: 0,
+            borders: Vec::new(),
+        }
+    }
+
+    //todo: Rotate TILE by multiple of 90 degrees
+    fn rotate(&mut self, angle: usize) {}
+
+    //todo: Flip TILE in horizon direction or vertical direction
+    fn flip(&mut self, horizon: bool) {}
+}
+
+struct IMAGE {
+    left: Vec<String>,
+    right: Vec<String>,
+    top: Vec<String>,
+    buttom: Vec<String>,
+}
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
