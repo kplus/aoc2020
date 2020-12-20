@@ -75,10 +75,30 @@ impl TILE {
         }
     }
 
-    //todo: Check if current tile lines up with the front, if so insert into map
-    fn line_up(&self, s: &String, map: &mut IMAGE) -> bool {
-        // match s {}
-        true
+    //todo: Check if current tile lines up with the front
+    fn line_up(&self, s: &str, b: &BorderDirection) -> Option<String> {
+        if *s == self.bottum {
+            return Some(self.top.to_owned());
+        } else if *s == self.top {
+            return Some(self.bottum.to_owned());
+        } else if *s == self.left {
+            return Some(self.right.to_owned());
+        } else if *s == self.right {
+            return Some(self.left.to_owned());
+        }
+
+        let r: String = s.chars().rev().collect();
+
+        if r == self.bottum {
+            return Some(self.top.chars().rev().collect::<String>());
+        } else if *s == self.top {
+            return Some(self.bottum.chars().rev().collect::<String>());
+        } else if *s == self.left {
+            return Some(self.right.chars().rev().collect::<String>());
+        } else if *s == self.right {
+            return Some(self.left.chars().rev().collect::<String>());
+        }
+        None
     }
 }
 
@@ -126,12 +146,20 @@ impl IMAGE {
     fn get_front(&self, x: isize, b: &BorderDirection) -> String {
         self.map.get(&(x, 0)).unwrap().get_border(b)
     }
+
+    fn store(&mut self, tile: TILE, x: isize, y: isize, b: &BorderDirection) {
+        if *b == BorderDirection::LEFT || *b == BorderDirection::RIGHT {
+            self.map.insert((x, 0), tile);
+        } else {
+            self.map.insert((x, y), tile);
+        }
+    }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//doing: Fill remain TILEs in given dimension
+// Fill remain TILEs in given dimension
 // This is done by go through one direction until the edge,
 // and go reverse from starting point to edge on the other end
 fn fill_one_direction(
@@ -144,10 +172,16 @@ fn fill_one_direction(
     let mut front = image.get_front(x, &direction);
     for i in 0..end {
         for tile in tiles_pool.iter().cloned() {
-            if tile.line_up(&front, image) {
-                front = tile.get_border(&direction);
-                tiles_pool.remove(&tile);
-                break; // break into next position in the image
+            match tile.line_up(&front, &direction) {
+                Some(f) => {
+                    front = f;
+                    image.store(tile.to_owned(), x, i, &direction);
+                    tiles_pool.remove(&tile);
+                    break;
+                } // break into next position in the image
+                None => {
+                    continue;
+                }
             }
         }
         // not line up found, it hits the edge
