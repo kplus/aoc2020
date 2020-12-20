@@ -2,6 +2,9 @@ use std::collections::{HashMap, HashSet};
 use std::error::Error;
 use std::hash::Hash;
 
+// `use` trait to get functionality
+use integer_sqrt::IntegerSquareRoot;
+
 use aoc2020::*;
 
 #[derive(PartialEq, Eq, Hash, Debug)]
@@ -67,12 +70,12 @@ struct IMAGE {
 
 impl IMAGE {
     //todo: Initialization of Image
-    fn new() -> Self {
+    fn new(grade: usize) -> Self {
         IMAGE {
             front: String::from(""),
             x_shift: 0,
             y_shift: 0,
-            grade: 0,
+            grade,
             map: HashMap::new(),
         }
     }
@@ -91,7 +94,7 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//todo: Fill remain TILEs in given dimension
+//doing: Fill remain TILEs in given dimension
 // This is done by go through one direction until the edge,
 // and go reverse from starting point to edge on the other end
 fn fill_dimension(tiles_pool: &mut HashSet<TILE>, image: &mut IMAGE, horizon: bool) {}
@@ -102,9 +105,15 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     for s in data {
         tiles_pool.insert(TILE::from_str(s));
     }
-    println!("the tiles pool is {:#?}", tiles_pool);
+    println!(
+        "the tiles pool is {:#?}, the length is {}",
+        tiles_pool,
+        tiles_pool.len()
+    );
 
-    let mut image = IMAGE::new();
+    let grade = tiles_pool.len().integer_sqrt();
+    println!("grade is {}", grade);
+    let mut image = IMAGE::new(grade);
 
     fill_dimension(&mut tiles_pool, &mut image, true);
 
