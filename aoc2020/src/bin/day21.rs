@@ -30,8 +30,16 @@ impl Mask {
     }
 
     fn get_index(&self) -> u32 {
-        let len = self.masks.len() - 1;
-        128 * len as u32 + self.masks[len].trailing_zeros()
+        let mut index = 0;
+        for mask in &self.masks {
+            if *mask == 0 {
+                index += 128;
+            } else {
+                index += mask.trailing_zeros();
+                break;
+            }
+        }
+        index
     }
 
     fn is_not_empty(&self) -> bool {
