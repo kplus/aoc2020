@@ -24,6 +24,9 @@ pub fn load_file_by_p() -> Result<Vec<String>, Box<dyn Error>> {
     let file = full_path.file_name().unwrap();
     let path = Path::new("../inputs").join(file);
     let input = fs::read_to_string(path)?;
-    let out: Vec<String> = input.split("\n\n").map(|s| s.to_string()).collect();
+    let out: Vec<String> = input
+        .split_terminator("\n\n")
+        .map(|s| s.to_string())
+        .collect();
     Ok(out)
 }
