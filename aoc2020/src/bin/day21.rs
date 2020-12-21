@@ -2,9 +2,10 @@ use aoc2020::*;
 use std::collections::HashMap;
 use std::error::Error;
 
+#[derive(Debug)]
 struct MaskLookUp {
     count: usize,
-    mask_table: HashMap<&'static str, usize>,
+    mask_table: HashMap<String, usize>,
 }
 
 impl MaskLookUp {
@@ -13,6 +14,22 @@ impl MaskLookUp {
             count: 0,
             mask_table: HashMap::new(),
         }
+    }
+
+    fn has(&self, s: &str) -> bool {
+        self.mask_table.contains_key(s)
+    }
+
+    fn insert(&mut self, s: &str) {
+        self.mask_table.insert(s.to_owned(), self.count);
+        self.count += 1;
+        if self.count == 128 {
+            panic!("Item count exceeds 128 can hold, consider to increase mask length");
+        };
+    }
+
+    fn get_mask(&self, s: &str) -> usize {
+        *self.mask_table.get(s).unwrap()
     }
 }
 
@@ -24,9 +41,35 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
 fn parse(
     s: String,
     mask_table: &mut MaskLookUp,
-    allergens: &mut HashMap<&str, u128>,
+    allergens: &mut HashMap<String, u128>,
     string_masks: &mut Vec<u128>,
 ) {
+    println!("String to parse is {}", s);
+
+    let tmp_s: Vec<&str> = s.split_terminator("(contains").map(|s| s.trim()).collect();
+    let mut string_mask = 0;
+
+    // go through the ingredients for this food, update mask lookup table if needed
+    // and cache the mask of current string
+    for ingredient in tmp_s[0].split_whitespace() {
+        println!("ingredient {}", ingredient);
+        if !mask_table.has(ingredient) {
+            println!("doesn't exist, so insert it");
+            mask_table.insert(ingredient);
+        }
+        string_mask |= 1 << mask_table.get_mask(ingredient);
+    }
+    println!("got string mask as {}", string_mask);
+    string_masks.push(string_mask.to_owned());
+
+    // go through the allergens in this food, update allergens table
+    for allergen in tmp_s[1]
+        .split_terminator(|c: char| c.is_ascii_punctuation())
+        .map(|s| s.trim())
+    {
+        let mask = allergens.entry(allergen.to_owned()).or_insert(u128::MAX);
+        *mask &= string_mask;
+    }
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
@@ -43,6 +86,11 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     for v in allergens.values() {
         allergen_mask |= v;
     }
+
+    println!(
+        "the mask table is {:#?}, allergen table is {:#?}, and string masks is {:#?}",
+        mask_table, allergens, string_masks
+    );
 
     // count the non-possible allergen ones
     let mut count = 0;
