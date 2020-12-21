@@ -15,7 +15,7 @@ impl Mask {
     }
 
     fn max() -> Self {
-        const MAX_GROUP: usize = 10; // set maximum mask vector to be 10 for now
+        const MAX_GROUP: usize = 2; // set maximum mask vector to be 2 for now
 
         Self {
             masks: vec![u128::MAX; MAX_GROUP],
@@ -27,6 +27,15 @@ impl Mask {
             ones += mask.count_ones();
         }
         ones
+    }
+
+    fn get_index(&self) -> u32 {
+        let len = self.masks.len() - 1;
+        128 * len as u32 + self.masks[len].trailing_zeros()
+    }
+
+    fn is_not_empty(&self) -> bool {
+        self.masks.len() != 1 || self.masks[0] != 0
     }
 }
 impl BitOrAssign for Mask {
@@ -57,12 +66,11 @@ impl BitAnd for Mask {
 
     // rhs is the "right-hand side" of the expression `a & b`
     fn bitand(self, rhs: Self) -> Self::Output {
-        let count = self.masks.len();
-        let mut out = vec![0; count];
-        out.copy_from_slice(&self.masks);
-        for (i, mask) in rhs.masks.iter().enumerate() {
+        let mut out = Vec::new();
+        let count = rhs.masks.len();
+        for (i, mask) in self.masks.iter().enumerate() {
             if i < count {
-                out[i] &= mask;
+                out.push(mask & rhs.masks[i]);
             }
         }
         Self { masks: out }
@@ -71,34 +79,17 @@ impl BitAnd for Mask {
 impl BitAndAssign for Mask {
     // rhs is the "right-hand side" of the expression `a &= b`
     fn bitand_assign(&mut self, rhs: Self) {
-        let count = self.masks.len();
-        for i in 0..rhs.masks.len() {
-            if i <= count {
+        let count = rhs.masks.len();
+        for i in 0..self.masks.len() {
+            if i < count {
                 self.masks[i] &= rhs.masks[i];
-            }
-        }
-    }
-}
-/*
-impl BitOr for Mask {
-    type Output = Self;
-
-    // rhs is the "right-hand side" of the expression `a | b`
-    fn bitor(self, rhs: Self) -> Self::Output {
-        let mut out = Vec::new();
-        let count = self.masks.len();
-        out.copy_from_slice(&self.masks);
-        for i in 0..rhs.masks.len() {
-            if i <= count {
-                out[i] |= rhs.masks[i];
             } else {
-                out.push(rhs.masks[i]);
+                self.masks[i] = 0;
             }
         }
-        Self { masks: out }
     }
 }
-*/
+
 #[derive(Debug)]
 struct MaskLookUp {
     count: usize,
@@ -120,8 +111,8 @@ impl MaskLookUp {
     fn insert(&mut self, s: &str) {
         self.mask_table.insert(s.to_owned(), self.count);
         self.count += 1;
-        if self.count == 1280 {
-            panic!("Item count exceeds 1280, consider to increase MAX const in Mask");
+        if self.count == 256 {
+            panic!("Item count exceeds 256, consider to increase MAX const in Mask");
         };
     }
 
@@ -136,10 +127,79 @@ impl MaskLookUp {
         out.push(1 << offset);
         Mask { masks: out }
     }
+
+    fn get_name(&self, mask: &Mask) -> String {
+        println!("try to find name of mask {:#?}", mask);
+        let i = mask.get_index();
+        println!("index to look is {}", i);
+        for (name, index) in self.mask_table.iter() {
+            if *index == i as usize {
+                println!("the name of ingredient is {}", name);
+                return name.to_owned();
+            }
+        }
+        String::new()
+    }
 }
 
-fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
+fn map_allergens(
+    mask_table: &MaskLookUp,
+    allergens: &mut HashMap<String, Mask>,
+    map: &mut HashMap<String, String>,
+) {
+    let mut mask_to_clear = Mask::new();
+    let mut name_to_clear = String::from("");
+    loop {
+        println!(
+            "start of loop, mask to clear is {:#?}, name is {}",
+            mask_to_clear, name_to_clear
+        );
+        if mask_to_clear.is_not_empty() {
+            allergens.remove(&name_to_clear);
+            for v in allergens.values_mut() {
+                *v &= !mask_to_clear.to_owned();
+            }
+            mask_to_clear = Mask::new();
+        }
+        //println!("allergen table is {:#?}", allergens);
+        for (name, mask) in allergens.iter() {
+            if mask.count_ones() == 1 {
+                let allergen = name.to_owned();
+                let ingredient = mask_table.get_name(mask);
+                println!(
+                    "found a match, allergen is {}, ingredient is {}",
+                    allergen, ingredient
+                );
+                map.insert(allergen, ingredient);
+                mask_to_clear = mask.to_owned();
+                name_to_clear = name.to_owned();
+                //println!("map updates to {:#?}", map);
+                break;
+            }
+        }
+        if allergens.is_empty() {
+            break;
+        }
+    }
+}
+
+fn question2(data: Vec<String>) -> Result<Vec<String>, &'static str> {
+    let mut mask_table = MaskLookUp::new();
+    let mut allergens = HashMap::new();
+    let mut string_masks = Vec::new();
+
+    for line in data {
+        parse(line, &mut mask_table, &mut allergens, &mut string_masks);
+    }
+
+    println!(
+        "mask lookup table is {:#?}, allergens tabls is {:#?}",
+        mask_table, allergens
+    );
+    let mut map = HashMap::new();
+    map_allergens(&mask_table, &mut allergens, &mut map);
+    println!("final map is {:#?}", map);
+    Ok(vec![String::from("")])
 }
 
 // Parse the input line, and fill in the tables we need
@@ -164,6 +224,8 @@ fn parse(
     }
     string_masks.push(string_mask.to_owned());
 
+    println!("string mask is {:#?}", string_mask);
+
     // go through the allergens in this food, update allergens table
     for allergen in tmp_s[1]
         .split_terminator(|c: char| c.is_ascii_punctuation())
@@ -185,6 +247,11 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
         parse(line, &mut mask_table, &mut allergens, &mut string_masks);
     }
 
+    println!(
+        "mask lookup table is {:#?}, allergens tabls is {:#?}",
+        mask_table, allergens
+    );
+
     // got the whole mask for all allergens
     let mut allergen_mask = Mask::new();
     for v in allergens.values() {
@@ -202,13 +269,13 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
+    //println!("{:#?}", data);
     match question2(data) {
-        Ok(x) => println!("The result for question 2 is {}", x),
+        Ok(x) => println!("The result for question 2 is {:?}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
@@ -233,6 +300,13 @@ mod tests {
     fn test_question2() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(
+            Ok(vec![
+                String::from("mxmxvkd"),
+                String::from("sqjhc"),
+                String::from("fvjkl")
+            ]),
+            question2(data)
+        );
     }
 }
