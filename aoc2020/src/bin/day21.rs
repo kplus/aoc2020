@@ -9,7 +9,9 @@ struct Mask {
 }
 impl Mask {
     fn new() -> Self {
-        Self { masks: Vec::new() }
+        let mut masks = Vec::new();
+        masks.push(0);
+        Self { masks }
     }
 
     fn max() -> Self {
@@ -31,7 +33,7 @@ impl BitOrAssign for Mask {
     fn bitor_assign(&mut self, rhs: Self) {
         let count = self.masks.len();
         for i in 0..rhs.masks.len() {
-            if i <= count {
+            if i < count {
                 self.masks[i] |= rhs.masks[i];
             } else {
                 self.masks.push(rhs.masks[i]);
@@ -55,11 +57,11 @@ impl BitAnd for Mask {
 
     // rhs is the "right-hand side" of the expression `a & b`
     fn bitand(self, rhs: Self) -> Self::Output {
-        let mut out = Vec::new();
         let count = self.masks.len();
+        let mut out = vec![0; count];
         out.copy_from_slice(&self.masks);
         for (i, mask) in rhs.masks.iter().enumerate() {
-            if i <= count {
+            if i < count {
                 out[i] &= mask;
             }
         }
@@ -147,7 +149,7 @@ fn parse(
     allergens: &mut HashMap<String, Mask>,
     string_masks: &mut Vec<Mask>,
 ) {
-    println!("String to parse is {}", s);
+    //println!("String to parse is {}", s);
 
     let tmp_s: Vec<&str> = s.split_terminator("(contains").map(|s| s.trim()).collect();
     let mut string_mask = Mask::new();
@@ -155,14 +157,11 @@ fn parse(
     // go through the ingredients for this food, update mask lookup table if needed
     // and cache the mask of current string
     for ingredient in tmp_s[0].split_whitespace() {
-        println!("ingredient {}", ingredient);
         if !mask_table.has(ingredient) {
-            println!("doesn't exist, so insert it");
             mask_table.insert(ingredient);
         }
         string_mask |= mask_table.get_mask(ingredient);
     }
-    println!("got string mask as {:#?}", string_mask);
     string_masks.push(string_mask.to_owned());
 
     // go through the allergens in this food, update allergens table
@@ -192,22 +191,18 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
         allergen_mask |= v.to_owned();
     }
 
-    println!(
-        "the mask table is {:#?}, allergen table is {:#?}, and string masks is {:#?}",
-        mask_table, allergens, string_masks
-    );
-
+    let inverse = !allergen_mask;
     // count the non-possible allergen ones
     let mut count = 0;
     for m in string_masks {
-        count += (m & !allergen_mask.to_owned()).count_ones();
+        count += (m & inverse.to_owned()).count_ones();
     }
     Ok(count as usize)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
