@@ -7,6 +7,79 @@ use integer_sqrt::IntegerSquareRoot;
 
 use aoc2020::*;
 
+// We use a generic object SQUARE to represent an object
+// with same elements on both directions, both the tile
+// and final image are entity of this object.(They can be
+// extended if bigger image needs to be generated from current
+// image.)
+//
+// a single pixel theoretically should be this object as
+// well, but we use native method for it
+//
+// It only build from original input(see if we can unify this),
+// or from LINE
+#[derive(PartialEq, Eq, Hash, Debug)]
+struct SQUARE {
+    degree: usize,          //number of pixels in one direction
+    pixels: Vec<Vec<char>>, //content of the square, as 2 dimension vectors
+    front: Vec<char>,       //the front line of border, to check adjacention with other SQUARE
+    back: Vec<char>,        //the reverse border to check
+    id: usize,              //unique ID for this square
+}
+
+impl SQUARE {
+    //todo: Build from initial input block string
+    // it has to call from_LINE, and build from LINE object
+    fn from_str(s: String) -> Self {
+        for line in s.lines() {}
+        Self {
+            degree: 0,
+            pixels: Vec::new(),
+            front: Vec::new(),
+            back: Vec::new(),
+            id: 0,
+        }
+    }
+
+    //todo: Build from line pool
+    fn from_line(l_pool: &mut HashSet<LINE>) -> Self {
+        Self {
+            degree: 0,
+            pixels: Vec::new(),
+            front: Vec::new(),
+            back: Vec::new(),
+            id: 0,
+        }
+    }
+}
+
+// An one dimension combinatin of SQUAREs, could be one
+// string in orignal input file or a full x-axis generated
+// from tiles(or image if extended)
+//
+// It only build from SQUARE
+#[derive(PartialEq, Eq, Hash, Debug)]
+struct LINE {
+    x_degree: usize,
+    y_degree: usize,
+    pixels: Vec<Vec<char>>, //content of the square, as 2 dimension vectors
+    front: Vec<char>,       //the front line of border, to check adjacention with other SQUARE
+    back: Vec<char>,        //the reverse border to check
+}
+
+impl LINE {
+    //todo: Build a LINE from SQUARE pool, the first item to use is randomly picked
+    fn from_square(s_pool: &mut HashSet<SQUARE>) -> Self {
+        Self {
+            x_degree: 0,
+            y_degree: 0,
+            pixels: Vec::new(),
+            front: Vec::new(),
+            back: Vec::new(),
+        }
+    }
+}
+
 #[derive(PartialEq, Debug)]
 enum BorderDirection {
     LEFT,
@@ -143,35 +216,6 @@ struct IMAGE {
 }
 
 impl IMAGE {
-    //todo: Initialization of Image
-    fn new(grade: usize) -> Self {
-        IMAGE {
-            x_shift: 0,
-            y_shift: 0,
-            grade,
-            map: HashMap::new(),
-        }
-    }
-
-    fn get_end(&self, b: &BorderDirection) -> isize {
-        match b {
-            BorderDirection::LEFT => self.x_shift,
-            BorderDirection::RIGHT => self.grade as isize + self.x_shift - 1,
-            BorderDirection::TOP => self.grade as isize + self.y_shift - 1,
-            BorderDirection::BOTTUM => self.y_shift,
-        }
-    }
-    fn set_range(&mut self, end: isize, b: &BorderDirection) {
-        match b {
-            BorderDirection::RIGHT => self.x_shift = end + 1 - self.grade as isize,
-            BorderDirection::TOP => self.y_shift = end + 1 - self.grade as isize,
-            _ => {}
-        };
-        //println!(
-        //    "passed in end is {}, x shift set to {}, y shift set to {}",
-        //    end, self.x_shift, self.y_shift
-        //);
-    }
     fn get_id(&self, x: isize, y: isize) -> usize {
         println!("x is {}, y is {}", x, y);
         self.map.get(&(x, y)).unwrap().tile_id()
@@ -182,18 +226,6 @@ impl IMAGE {
         }
         //println!("try to get border line {:?} for {}-0", b, x);
         self.map.get_mut(&(x, 0)).unwrap().get_border(b)
-    }
-
-    fn store(&mut self, tile: TILE, x: isize, i: isize, b: &BorderDirection) {
-        if *b == BorderDirection::LEFT || *b == BorderDirection::RIGHT {
-            self.map.insert((i, 0), tile);
-        } else {
-            self.map.insert((x, i), tile);
-        }
-    }
-
-    fn map_is_empty(&self) -> bool {
-        self.map.is_empty()
     }
 }
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
@@ -261,58 +293,28 @@ fn fill_one_direction(
     }
 }
 
+//redoing: use proper modeling
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut product = 1;
-    let mut tiles_pool = HashSet::new();
+    let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
     for s in data {
-        tiles_pool.insert(TILE::from_str(s));
+        s_pool.insert(SQUARE::from_str(s));
     }
     println!(
         "the tiles pool is {:#?}, the length is {}",
-        tiles_pool,
-        tiles_pool.len()
+        s_pool,
+        s_pool.len()
     );
 
-    let grade = tiles_pool.len().integer_sqrt();
-    //println!("grade is {}", grade);
-    let mut image = IMAGE::new(grade);
+    let grade = s_pool.len().integer_sqrt();
+    println!("grade is {}", grade);
 
-    fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::RIGHT, 0);
-    let x_start = image.get_end(&BorderDirection::LEFT);
-    //println!("x start is {}", x_start);
-    if x_start < 0 {
-        // if there is a shift
-        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::LEFT, 0);
+    let mut l_pool = HashSet::new(); // LINE pool, store the LINEs generated from the SQUARE pool
+    for _i in 0..grade {
+        l_pool.insert(LINE::from_square(&mut s_pool));
     }
-    let x_end = grade as isize + x_start - 1;
-    println!("x start is {}, end is {}", x_start, x_end);
-    for i in x_start..=x_end {
-        println!("start filling colum {}", i);
-        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::TOP, i);
-        let y_start = image.get_end(&BorderDirection::BOTTUM);
-        if y_start < 0 {
-            // if there is a shift
-            fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::BOTTUM, i);
-        }
-    }
-
-    println!("The tile pool is {:#?}, image is {:#?}", tiles_pool, image);
-    let y_start = image.get_end(&BorderDirection::BOTTUM);
-    let y_end = grade as isize + y_start - 1;
-    println!(
-        "image range is from x {} - {}, y {} - {}",
-        x_start, x_end, y_start, y_end
-    );
-    for (x, y) in [
-        (x_start, y_start),
-        (x_end, y_start),
-        (x_start, y_end),
-        (x_end, y_end),
-    ]
-    .iter()
-    {
-        product *= image.get_id(*x, *y);
-    }
+    let image = SQUARE::from_line(&mut l_pool);
+    //todo: get the product for question 1 based on Image generated
     Ok(product)
 }
 
