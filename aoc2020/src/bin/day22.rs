@@ -19,31 +19,23 @@ fn run(p1: &mut Vec<usize>, p2: &mut Vec<usize>) {
     }
     //println!("stacks are:\n p1: {:?}\n p2: {:?}", p1, p2);
 }
-
-fn question1(mut player1: Vec<String>) -> Result<usize, &'static str> {
+fn get_stack(mut player1: Vec<String>) -> (Vec<usize>, Vec<usize>) {
     let len = player1.len();
     let player2 = player1.split_off(len / 2 + 1);
 
-    /*
-        player1.remove(0);
-        player1.pop();
-        player2.remove(0);
-    */
-    let mut player1: Vec<usize> = player1
+    let player1: Vec<usize> = player1
         .iter()
         .filter_map(|s| s.parse::<usize>().ok())
         .collect();
-    let mut player2: Vec<usize> = player2
+    let player2: Vec<usize> = player2
         .iter()
         .filter_map(|s| s.parse::<usize>().ok())
         .collect();
     //println!("player 1 is {:#?}", player1);
     //println!("player 2 is {:#?}", player2);
-
-    while !player1.is_empty() && !player2.is_empty() {
-        run(&mut player1, &mut player2);
-    }
-
+    (player1, player2)
+}
+fn output(player1: Vec<usize>, player2: Vec<usize>) -> usize {
     let mut winner = player1;
     if player2.is_empty() {
         println!("Winner is player 1");
@@ -53,7 +45,17 @@ fn question1(mut player1: Vec<String>) -> Result<usize, &'static str> {
     }
     let len = winner.len();
     //println!("final stack is {:#?}", winner);
-    Ok(winner.iter().enumerate().map(|(i, v)| v * (len - i)).sum())
+    winner.iter().enumerate().map(|(i, v)| v * (len - i)).sum()
+}
+
+fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+    let (mut player1, mut player2) = get_stack(data);
+
+    while !player1.is_empty() && !player2.is_empty() {
+        run(&mut player1, &mut player2);
+    }
+
+    Ok(output(player1, player2))
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -98,6 +100,6 @@ mod tests {
     fn test_question2() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(Ok(291), question2(data));
     }
 }
