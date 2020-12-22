@@ -6,19 +6,39 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-//todo: Run a round to compare and move cards
-fn run(p1: &mut Vec<String>, p2: &mut Vec<String>) {}
+// Run a round to compare and move cards
+fn run(p1: &mut Vec<usize>, p2: &mut Vec<usize>) {
+    let p1_head = p1.remove(0);
+    let p2_head = p2.remove(0);
+    if p1_head > p2_head {
+        p1.push(p1_head);
+        p1.push(p2_head);
+    } else {
+        p2.push(p2_head);
+        p2.push(p1_head);
+    }
+    //println!("stacks are:\n p1: {:?}\n p2: {:?}", p1, p2);
+}
 
 fn question1(mut player1: Vec<String>) -> Result<usize, &'static str> {
     let len = player1.len();
-    let mut player2 = player1.split_off(len / 2 + 1);
+    let player2 = player1.split_off(len / 2 + 1);
 
-    player1.remove(0);
-    player1.pop();
-    player2.remove(0);
-
-    println!("player 1 is {:#?}", player1);
-    println!("player 2 is {:#?}", player2);
+    /*
+        player1.remove(0);
+        player1.pop();
+        player2.remove(0);
+    */
+    let mut player1: Vec<usize> = player1
+        .iter()
+        .filter_map(|s| s.parse::<usize>().ok())
+        .collect();
+    let mut player2: Vec<usize> = player2
+        .iter()
+        .filter_map(|s| s.parse::<usize>().ok())
+        .collect();
+    //println!("player 1 is {:#?}", player1);
+    //println!("player 2 is {:#?}", player2);
 
     while !player1.is_empty() && !player2.is_empty() {
         run(&mut player1, &mut player2);
@@ -32,11 +52,8 @@ fn question1(mut player1: Vec<String>) -> Result<usize, &'static str> {
         winner = player2;
     }
     let len = winner.len();
-    Ok(winner
-        .iter()
-        .enumerate()
-        .map(|(i, v)| v.parse::<usize>().unwrap() * (len - i))
-        .sum())
+    //println!("final stack is {:#?}", winner);
+    Ok(winner.iter().enumerate().map(|(i, v)| v * (len - i)).sum())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
