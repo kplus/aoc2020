@@ -1,6 +1,4 @@
-use std::char::from_digit;
 use std::error::Error;
-use std::fmt;
 
 struct LIST {
     list: Vec<usize>,
@@ -73,18 +71,9 @@ impl LIST {
         }
         index
     }
-}
 
-impl fmt::Display for LIST {
-    fn fmt(&self, f: &mut fmt::Formatter) -> fmt::Result {
-        write!(
-            f,
-            "{}",
-            self.list
-                .iter()
-                .map(|d| from_digit(*d as u32, 10).unwrap())
-                .collect::<String>()
-        )
+    fn get_list_string(&self) -> String {
+        self.list.iter().map(|i| i.to_string()).collect::<String>()
     }
 }
 
@@ -92,7 +81,7 @@ fn question2(data: &str) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-fn question1(data: &str) -> Result<LIST, &'static str> {
+fn question1(data: &str) -> Result<String, &'static str> {
     const MOVES: usize = 100;
     let mut list = LIST::from_str(data);
     let len = list.get_len();
@@ -129,7 +118,7 @@ fn question1(data: &str) -> Result<LIST, &'static str> {
     }
     list.shift(list.find(1).unwrap());
     //println!("final list is {}", list);
-    Ok(list)
+    Ok(list.get_list_string())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -154,12 +143,7 @@ mod tests {
 
     #[test]
     fn test_question1() {
-        //assert_eq!(
-        //    Ok("67384529"),
-        //    Some(print!("{}", question1(TEST_INPUT).unwrap()))
-        //);
-        question1(TEST_INPUT);
-        assert_eq!(1, 1);
+        assert_eq!(Ok(String::from("167384529")), question1(TEST_INPUT));
     }
     #[test]
     fn test_question2() {
