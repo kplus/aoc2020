@@ -77,11 +77,7 @@ impl LIST {
     }
 }
 
-fn question2(data: &str) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
-}
-
-fn question1(data: &str) -> Result<String, &'static str> {
+fn question(data: &str) -> Result<String, &'static str> {
     const MOVES: usize = 100;
     let mut list = LIST::from_str(data);
     let len = list.get_len();
@@ -124,14 +120,11 @@ fn question1(data: &str) -> Result<String, &'static str> {
 fn main() -> Result<(), Box<dyn Error>> {
     let data = "538914762";
     //println!("{:#?}", data);
-    match question1(data) {
+    match question(data) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
-    match question2(data) {
-        Ok(x) => println!("The result for question 2 is {}", x),
-        Err(x) => eprintln!("Error processing the input data: {:?}", x),
-    };
+
     Ok(())
 }
 
@@ -142,11 +135,7 @@ mod tests {
     static TEST_INPUT: &str = r"389125467";
 
     #[test]
-    fn test_question1() {
+    fn test_question() {
         assert_eq!(Ok(String::from("167384529")), question1(TEST_INPUT));
-    }
-    #[test]
-    fn test_question2() {
-        assert_eq!(Err("Cannot find second number."), question2(TEST_INPUT));
     }
 }
