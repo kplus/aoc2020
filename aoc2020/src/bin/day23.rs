@@ -21,7 +21,6 @@ impl LIST {
                     break;
                 }
             }
-
             list.insert(i, next);
             next = i;
         }
@@ -83,14 +82,39 @@ impl LIST {
             .map(|d| d.to_string())
             .collect::<String>()
     }
+
+    fn add_extra(&mut self, head: usize, tail: usize) {
+        //const END: usize = 15;
+        const END: usize = 1000000;
+        for i in 10..=END {
+            self.list.insert(i, i + 1);
+        }
+        self.list.insert(tail, 10);
+        self.list.insert(END, head);
+
+        self.big = vec![END, END - 1, END - 2, END - 3];
+    }
+
+    fn get_product(&self) -> usize {
+        let next_one = self.list.get(&1).unwrap();
+
+        //println!("next one is {}", next_one);
+
+        *self.list.get(next_one).unwrap() * *next_one
+    }
 }
 
-fn question(data: &str) -> Result<String, &'static str> {
-    const MOVES: usize = 100;
+fn question(data: &str) -> Result<usize, &'static str> {
+    const MOVES: usize = 10000000;
+    //const MOVES: usize = 10;
     let mut list = LIST::from_str(data);
-    //println!("initial list is {:#?}", list);
     let mut next_cup = data.chars().next().unwrap().to_digit(10).unwrap() as usize; // start point
-    for i in 0..MOVES {
+    list.add_extra(
+        next_cup,
+        data.chars().rev().next().unwrap().to_digit(10).unwrap() as usize,
+    ); // pass in head and tail of list
+       //println!("initial list is {:#?}", list);
+    for _i in 0..MOVES {
         let current_cup = next_cup;
         next_cup = list.step(current_cup, 3);
 
@@ -109,7 +133,8 @@ fn question(data: &str) -> Result<String, &'static str> {
         list.insert(cups_to_move, dest);
     }
     //println!("final list is {:?}", list);
-    Ok(list.get_list_string())
+    //Ok(list.get_list_string())    //question 1 output
+    Ok(list.get_product())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -131,6 +156,7 @@ mod tests {
 
     #[test]
     fn test_question() {
-        assert_eq!(Ok(String::from("67384529")), question(TEST_INPUT));
+        //assert_eq!(Ok(String::from("67384529")), question(TEST_INPUT));   // question 1 test
+        assert_eq!(Ok(149245887792), question(TEST_INPUT));
     }
 }
