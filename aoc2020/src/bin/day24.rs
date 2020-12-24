@@ -7,7 +7,7 @@ struct TILE {
     coordinate_x: isize,
     coordinate_z: isize,
     pre_black: bool,
-    neigbhor_count: isize,
+    neigbhor_count: usize,
 }
 
 impl TILE {
@@ -15,7 +15,7 @@ impl TILE {
         coordinate_x: isize,
         coordinate_z: isize,
         pre_black: bool,
-        neigbhor_count: isize,
+        neigbhor_count: usize,
     ) -> Self {
         TILE {
             coordinate_x,
@@ -39,15 +39,15 @@ impl TILE {
     fn propogate(&self, floor: &mut HashMap<(isize, isize), TILE>) {
         for x in -1..2 {
             for z in -1..2 {
-                let coordinate_x = self.coordinate_x + x;
-                let coordinate_z = self.coordinate_z + z;
-                let key = (coordinate_x, coordinate_z);
                 if x * z >= 0 {
+                    let coordinate_x = self.coordinate_x + x;
+                    let coordinate_z = self.coordinate_z + z;
+                    let key = (coordinate_x, coordinate_z);
                     //6 positions of neighbor
                     if (x + z) != 0 {
                         match floor.get_mut(&key) {
-                            Some(cube) => {
-                                cube.add_neighbor_count();
+                            Some(tile) => {
+                                tile.add_neighbor_count();
                             }
                             None => {
                                 floor.insert(key, TILE::new(coordinate_x, coordinate_z, false, 1));
@@ -70,8 +70,45 @@ impl TILE {
     }
 }
 
+// After one day and do a flipping
+// [in]     the existing lobby floor
+// [out]    new lobby after flipping
+fn cycle(old_lobby: HashMap<(isize, isize), TILE>) -> HashMap<(isize, isize), TILE> {
+    let mut lobby: HashMap<(isize, isize), TILE> = HashMap::new();
+
+    for tile in old_lobby.values() {
+        tile.propogate(&mut lobby);
+    }
+
+    lobby.retain(|_, v| v.flip_black());
+
+    lobby
+}
+
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
+    const ROUND: usize = 100;
+    //to be compatible with question 1, we generate this intermediate hashmap first
+    let floor: HashMap<(isize, isize), usize> = init_floor(data);
+    //println!("Init grid is {:#?}, length is {}", grid, grid.len());
+    let mut lobby: HashMap<(isize, isize), TILE> = floor
+        .iter()
+        .map(|((x, z), flip)| {
+            (
+                (*x, *z),
+                TILE {
+                    coordinate_x: *x,
+                    coordinate_z: *z,
+                    pre_black: flip % 2 == 1,
+                    neigbhor_count: 0,
+                },
+            )
+        })
+        .collect();
+    for i in 0..ROUND {
+        lobby = cycle(lobby);
+    }
+
+    Ok(lobby.len())
 }
 
 fn init_floor(data: Vec<String>) -> HashMap<(isize, isize), usize> {
@@ -112,13 +149,13 @@ fn init_floor(data: Vec<String>) -> HashMap<(isize, isize), usize> {
         *flip += 1;
     }
 
-    //println!("final floor is {:#?}", floor);
+    floor.retain(|_, flip| *flip % 2 == 1);
     floor
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let floor: HashMap<(isize, isize), usize> = init_floor(data);
-    Ok(floor.into_iter().filter(|(_, flip)| flip % 2 == 1).count())
+    Ok(floor.len())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -170,6 +207,6 @@ mod tests {
     fn test_question2() {
         let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
 
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        assert_eq!(Ok(2208), question2(data));
     }
 }
