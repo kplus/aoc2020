@@ -20,7 +20,7 @@ fn question2(data: Vec<String>) -> Result<usize, &'static str> {
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    let mut floor: HashMap<(isize, isize, isize), usize> = HashMap::new();
+    let mut floor: HashMap<(isize, isize), usize> = HashMap::new();
     for s in data {
         // One line per tile
         let mut x = 0; // x-axis represents E/W directionS
@@ -51,18 +51,19 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
             }
         }
 
-        let flip = floor.entry((x, y, z)).or_insert(1);
+        // as in hexagonal, different routes can ends in same position
+        // we need to unify it. x+z=y in our setup
+        let flip = floor.entry((x + y, y + z)).or_insert(0);
         *flip += 1;
-        println!("floor is {:#?}", floor);
     }
 
-    println!("final floor is {:#?}", floor);
+    //println!("final floor is {:#?}", floor);
     Ok(floor.into_iter().filter(|(_, flip)| flip % 2 == 1).count())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file()?;
-    println!("{:#?}", data);
+    //println!("{:#?}", data);
     match question1(data.to_owned()) {
         Ok(x) => println!("The result for question 1 is {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
