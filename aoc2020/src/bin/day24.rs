@@ -2,24 +2,79 @@ use aoc2020::*;
 use std::collections::HashMap;
 use std::error::Error;
 
-/*
+#[derive(Debug)]
 struct TILE {
-    coordinarate: (isize, isize, isize),
-    flip: usize
+    coordinate_x: isize,
+    coordinate_z: isize,
+    pre_black: bool,
+    neigbhor_count: isize,
 }
 
 impl TILE {
-    //todo: Get a instruction of tile from
-    fn from_str(s:String) -> Self {
+    fn new(
+        coordinate_x: isize,
+        coordinate_z: isize,
+        pre_black: bool,
+        neigbhor_count: isize,
+    ) -> Self {
+        TILE {
+            coordinate_x,
+            coordinate_z,
+            pre_black,
+            neigbhor_count,
+        }
+    }
 
+    fn flip_black(&self) -> bool {
+        self.neigbhor_count == 2 || (self.neigbhor_count == 1 && self.pre_black)
+    }
+    fn previous_black(&mut self) {
+        self.pre_black = true;
+    }
+
+    fn add_neighbor_count(&mut self) {
+        self.neigbhor_count += 1;
+    }
+
+    fn propogate(&self, floor: &mut HashMap<(isize, isize), TILE>) {
+        for x in -1..2 {
+            for z in -1..2 {
+                let coordinate_x = self.coordinate_x + x;
+                let coordinate_z = self.coordinate_z + z;
+                let key = (coordinate_x, coordinate_z);
+                if x * z >= 0 {
+                    //6 positions of neighbor
+                    if (x + z) != 0 {
+                        match floor.get_mut(&key) {
+                            Some(cube) => {
+                                cube.add_neighbor_count();
+                            }
+                            None => {
+                                floor.insert(key, TILE::new(coordinate_x, coordinate_z, false, 1));
+                            }
+                        }
+                    } else {
+                        // self
+                        match floor.get_mut(&key) {
+                            Some(cube) => {
+                                cube.previous_black();
+                            }
+                            None => {
+                                floor.insert(key, TILE::new(coordinate_x, coordinate_z, true, 0));
+                            }
+                        }
+                    }
+                }
+            }
+        }
     }
 }
-*/
+
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
-fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+fn init_floor(data: Vec<String>) -> HashMap<(isize, isize), usize> {
     let mut floor: HashMap<(isize, isize), usize> = HashMap::new();
     for s in data {
         // One line per tile
@@ -58,6 +113,11 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     }
 
     //println!("final floor is {:#?}", floor);
+    floor
+}
+
+fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+    let floor: HashMap<(isize, isize), usize> = init_floor(data);
     Ok(floor.into_iter().filter(|(_, flip)| flip % 2 == 1).count())
 }
 
