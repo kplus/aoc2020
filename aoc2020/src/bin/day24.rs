@@ -1,13 +1,63 @@
+use aoc2020::*;
+use std::collections::HashMap;
 use std::error::Error;
 
-use aoc2020::*;
+/*
+struct TILE {
+    coordinarate: (isize, isize, isize),
+    flip: usize
+}
 
+impl TILE {
+    //todo: Get a instruction of tile from
+    fn from_str(s:String) -> Self {
+
+    }
+}
+*/
 fn question2(data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
 
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find first number.")
+    let mut floor: HashMap<(isize, isize, isize), usize> = HashMap::new();
+    for s in data {
+        // One line per tile
+        let mut x = 0; // x-axis represents E/W directionS
+        let mut y = 0; // y-axis represents NE/SW directionS
+        let mut z = 0; // z-axis represents NW/SE directionS
+        let mut cache_c = ' ';
+        for c in s.chars() {
+            match c {
+                'n' => cache_c = 'n',
+                's' => cache_c = 's',
+                'e' => {
+                    match cache_c {
+                        'n' => y += 1,
+                        's' => z -= 1,
+                        _ => x += 1,
+                    };
+                    cache_c = ' ';
+                }
+                'w' => {
+                    match cache_c {
+                        'n' => z += 1,
+                        's' => y -= 1,
+                        _ => x -= 1,
+                    };
+                    cache_c = ' ';
+                }
+                _ => {}
+            }
+        }
+
+        let flip = floor.entry((x, y, z)).or_insert(1);
+        *flip += 1;
+        println!("floor is {:#?}", floor);
+    }
+
+    println!("final floor is {:#?}", floor);
+    Ok(floor.into_iter().filter(|(_, flip)| flip % 2 == 1).count())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
