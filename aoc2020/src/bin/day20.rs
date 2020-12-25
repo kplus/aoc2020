@@ -28,140 +28,38 @@ struct SQUARE {
 }
 
 impl SQUARE {
-    //todo: Build from initial input block string
+    // Build from initial input block string
     // it has to call from_LINE, and build from LINE object
     fn from_str(s: String) -> Self {
-        for line in s.lines() {}
-        Self {
-            degree: 0,
-            pixels: Vec::new(),
-            front: Vec::new(),
-            back: Vec::new(),
-            id: 0,
-        }
-    }
-
-    //todo: Build from line pool
-    fn from_line(l_pool: &mut HashSet<LINE>) -> Self {
-        Self {
-            degree: 0,
-            pixels: Vec::new(),
-            front: Vec::new(),
-            back: Vec::new(),
-            id: 0,
-        }
-    }
-}
-
-// An one dimension combinatin of SQUAREs, could be one
-// string in orignal input file or a full x-axis generated
-// from tiles(or image if extended)
-//
-// It only build from SQUARE
-#[derive(PartialEq, Eq, Hash, Debug)]
-struct LINE {
-    x_degree: usize,
-    y_degree: usize,
-    pixels: Vec<Vec<char>>, //content of the square, as 2 dimension vectors
-    front: Vec<char>,       //the front line of border, to check adjacention with other SQUARE
-    back: Vec<char>,        //the reverse border to check
-}
-
-impl LINE {
-    //todo: Build a LINE from SQUARE pool, the first item to use is randomly picked
-    fn from_square(s_pool: &mut HashSet<SQUARE>) -> Self {
-        Self {
-            x_degree: 0,
-            y_degree: 0,
-            pixels: Vec::new(),
-            front: Vec::new(),
-            back: Vec::new(),
-        }
-    }
-}
-
-#[derive(PartialEq, Debug)]
-enum BorderDirection {
-    LEFT,
-    RIGHT,
-    TOP,
-    BOTTUM,
-}
-
-#[derive(PartialEq, Eq, Hash, Debug, Clone)]
-struct TILE {
-    id: usize,
-    horizon: Vec<String>,
-    vertical: Vec<String>,
-}
-
-impl TILE {
-    // Create TILE from block strings
-    fn from_str(s: String) -> Self {
-        println!("create tile from string {:?}", s);
-        let v: Vec<&str> = s.lines().map(|s| s.trim()).collect();
-
-        let id = v[0]
+        let mut pixels = Vec::new();
+        let mut front = Vec::new();
+        let mut back = Vec::new();
+        let mut iter = s.lines();
+        let id = iter
+            .next()
+            .unwrap()
             .split(|c| c == ' ' || c == ':')
             .nth(1)
             .unwrap()
             .parse::<usize>()
             .unwrap();
-        let grade = v.len() - 1;
-        let mut horizon = Vec::new();
-        let mut vertical = Vec::new();
-        let top = v[1].to_string();
-        let bottum = v[grade].to_string();
-        let mut left = String::new();
-        let mut right = String::new();
-        for line in v.iter().skip(1) {
-            let c: Vec<char> = line.chars().collect();
-            left.push(c[0]);
-            right.push(c[grade - 1]);
+
+        for line in iter {
+            let line: Vec<char> = line.trim().chars().collect();
+            front.push(line[line.len() - 1].to_owned());
+            back.push(line[0].to_owned());
+            pixels.push(line);
         }
-        horizon.push(left);
-        horizon.push(right);
-        vertical.push(top);
-        vertical.push(bottum);
-        TILE {
+        Self {
+            degree: pixels.len(),
+            pixels,
+            front,
+            back,
             id,
-            horizon,
-            vertical,
-        }
-    }
-    /* seems we don't really need these method at moment, as we supply the right front line directly
-        //todo: Rotate TILE by multiple of 90 degrees
-        fn rotate(&mut self, angle: usize) {}
-
-        //todo: Flip TILE in horizon direction or vertical direction
-        fn flip(&mut self, horizon: bool) {}
-    */
-    fn tile_id(&self) -> usize {
-        self.id
-    }
-    // we don't really care about which border is it, as long as it's on same direction
-    fn get_border(&mut self, border: &BorderDirection) -> String {
-        match border {
-            BorderDirection::LEFT | BorderDirection::RIGHT => {
-                let ret = self.horizon[0].to_owned();
-                self.horizon.remove(0);
-                ret
-            }
-            BorderDirection::TOP | BorderDirection::BOTTUM => {
-                if !self.vertical.is_empty() {
-                    let ret = self.vertical[0].to_owned();
-                    self.vertical.remove(0);
-                    ret
-                } else {
-                    let ret = self.horizon[0].to_owned();
-                    self.horizon.remove(0);
-                    ret
-                }
-            }
         }
     }
 
-    // Check if current tile lines up with the front
+    // todo: Check if current tile lines up with the front
     // Return opposite line if lined up or none if not line up
     fn line_up(&mut self, s: &String) -> Option<String> {
         println!("checking string {} with tile {}", s, self.id);
@@ -205,6 +103,129 @@ impl TILE {
         }
         None
     }
+
+    //todo: Build from line pool
+    fn from_line(l_pool: &mut HashSet<LINE>) -> Self {
+        Self {
+            degree: 0,
+            pixels: Vec::new(),
+            front: Vec::new(),
+            back: Vec::new(),
+            id: 0,
+        }
+    }
+
+    fn degree(&self) -> usize {
+        self.degree
+    }
+    fn pixels(&self) -> Vec<Vec<char>> {
+        self.pixels
+    }
+    fn front(&self) -> Vec<_> {
+        self.front
+    }
+    fn back(&self) -> Vec<_> {
+        self.back
+    }
+    fn id(&self) -> usize {
+        self.id
+    }
+}
+
+// An one dimension combinatin of SQUAREs, could be one
+// string in orignal input file or a full x-axis generated
+// from tiles(or image if extended)
+//
+// It only build from SQUARE
+#[derive(PartialEq, Eq, Hash, Debug)]
+struct LINE {
+    x_degree: usize,
+    y_degree: usize,
+    pixels: Vec<Vec<char>>, //content of the square, as 2 dimension vectors
+    front: Vec<char>,       //the front line of border, to check adjacention with other SQUARE
+    back: Vec<char>,        //the reverse border to check
+}
+
+impl LINE {
+    //todo: Build a LINE from SQUARE pool, the first item to use is randomly picked
+    fn from_square(s_pool: &mut HashSet<SQUARE>, num: usize) -> Self {
+        let mut pixels = Vec::new();
+        let mut front = Vec::new();
+        let mut back = Vec::new();
+        let mut x_degree = 0;
+        let mut y_degree = 0;
+        for _i in 0..num {
+            for square in s_pool.iter() {
+                if front.is_empty() {
+                    x_degree = square.degree;
+                    y_degree = square.degree * num;
+                    pixels = square.pixels;
+                    front = square.front;
+                    back = square.back;
+                    continue;
+                }
+                if square.lines_up(&front) {
+                    //note: may need to tweat a bit if square needs rotating/flipping
+                    for (l, line) in square.pixels.iter().enumerate() {
+                        let mut line = line.to_owned();
+                        pixels[l].append(&mut line);
+                    }
+                    front = square.front;
+                    s_pool.remove(square);
+                    continue;
+                }
+            }
+        }
+        Self {
+            x_degree: 0,
+            y_degree: 0,
+            pixels: Vec::new(),
+            front: Vec::new(),
+            back: Vec::new(),
+        }
+    }
+}
+
+#[derive(PartialEq, Debug)]
+enum BorderDirection {
+    LEFT,
+    RIGHT,
+    TOP,
+    BOTTUM,
+}
+
+/*
+#[derive(PartialEq, Eq, Hash, Debug, Clone)]
+struct TILE {
+    id: usize,
+    horizon: Vec<String>,
+    vertical: Vec<String>,
+}
+
+impl TILE {
+
+    // we don't really care about which border is it, as long as it's on same direction
+    fn get_border(&mut self, border: &BorderDirection) -> String {
+        match border {
+            BorderDirection::LEFT | BorderDirection::RIGHT => {
+                let ret = self.horizon[0].to_owned();
+                self.horizon.remove(0);
+                ret
+            }
+            BorderDirection::TOP | BorderDirection::BOTTUM => {
+                if !self.vertical.is_empty() {
+                    let ret = self.vertical[0].to_owned();
+                    self.vertical.remove(0);
+                    ret
+                } else {
+                    let ret = self.horizon[0].to_owned();
+                    self.horizon.remove(0);
+                    ret
+                }
+            }
+        }
+    }
+
 }
 
 #[derive(Debug)]
@@ -227,9 +248,6 @@ impl IMAGE {
         //println!("try to get border line {:?} for {}-0", b, x);
         self.map.get_mut(&(x, 0)).unwrap().get_border(b)
     }
-}
-fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
 }
 
 // Fill remain TILEs in given dimension
@@ -292,26 +310,31 @@ fn fill_one_direction(
         image.set_range(index, &direction);
     }
 }
-
+*/
+fn question2(data: Vec<String>) -> Result<usize, &'static str> {
+    Err("Cannot find second number.")
+}
 //redoing: use proper modeling
 fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     let mut product = 1;
     let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
     for s in data {
         s_pool.insert(SQUARE::from_str(s));
+        //println!("current s pool is {:#?}", s_pool)
     }
-    println!(
-        "the tiles pool is {:#?}, the length is {}",
-        s_pool,
-        s_pool.len()
-    );
+    //println!(
+    //    "the tiles pool is {:#?}, the length is {}",
+    //    s_pool,
+    //    s_pool.len()
+    //);
 
     let grade = s_pool.len().integer_sqrt();
     println!("grade is {}", grade);
 
     let mut l_pool = HashSet::new(); // LINE pool, store the LINEs generated from the SQUARE pool
     for _i in 0..grade {
-        l_pool.insert(LINE::from_square(&mut s_pool));
+        //doing
+        l_pool.insert(LINE::from_square(&mut s_pool, grade));
     }
     let image = SQUARE::from_line(&mut l_pool);
     //todo: get the product for question 1 based on Image generated
