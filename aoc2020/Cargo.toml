@@ -9,3 +9,4 @@ edition = "2018"
 [dependencies]
 regex = "1"
 integer-sqrt = "0.1.5"
+simple-grid = "1.0.0"
