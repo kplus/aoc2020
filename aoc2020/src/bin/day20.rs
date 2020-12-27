@@ -9,6 +9,11 @@ use simple_grid::Grid;
 
 use aoc2020::*;
 
+trait HasGrid{
+    fn grid(&self) -> &Grid<char>;
+    fn degree(&self) -> usize;
+    fn line_up(&self, s: &[char]) -> Option<Grid<char>>;
+}
 // We use a generic object SQUARE to represent an object
 // with same elements on both directions, both the tile
 // and final image are entity of this object.(They can be
@@ -27,6 +32,47 @@ struct SQUARE {
     id: usize,        //unique ID for this square
 }
 
+impl HasGrid for SQUARE{        
+    fn grid(&self) -> &Grid<char> {
+        &self.grid
+    }
+
+    fn degree(&self) -> usize {
+        self.degree
+    }
+    // Check if current tile lines up with the front
+    // also rotate/flip the tile to make the lined up line to
+    // be the top of tile, as we grew to bottum
+    fn line_up(&self, s: &[char]) -> Option<Grid<char>> {
+        //println!("checking string {:?} with tile {}", s, self.id);
+        let top: Vec<char> = self.grid.row_iter(0).cloned().collect();
+        let buttom: Vec<char> = self.grid.row_iter(self.degree() - 1).cloned().collect();
+        let left: Vec<char> = self.grid.column_iter(0).cloned().collect();
+        let right: Vec<char> = self.grid.column_iter(self.degree() - 1).cloned().collect();
+        let mut s = s.to_owned();
+        if s == top {
+            return Some(self.grid().to_owned());
+        } else if s == buttom {
+            return Some(self.grid().flip_vertically());
+        } else if s == left {
+            return Some(self.grid().transpose());
+        } else if s == right {
+            return Some(self.grid().rotate_ccw());
+        }
+        s.reverse();
+        if s == top {
+            return Some(self.grid().flip_horizontally());
+        } else if s == buttom {
+            return Some(self.grid().flip_horizontally().flip_vertically());
+        } else if s == left {
+            return Some(self.grid().rotate_cw());
+        } else if s == right {
+            return Some(self.grid().rotate_ccw().flip_horizontally());
+        }
+        None
+    }
+}
+
 impl SQUARE {
     // Create an empty SQUARE
     fn new() -> Self {
@@ -34,6 +80,14 @@ impl SQUARE {
             degree: 0,
             grid: Grid::new(0, 0, [].to_vec()),
             id: 0,
+        }
+    }
+
+    fn rotate(&self) -> Self {
+        Self {
+            degree: self.degree,
+            grid: self.grid.rotate_cw(),
+            id: self.id,
         }
     }
 
@@ -56,127 +110,27 @@ impl SQUARE {
         Self { degree, grid, id }
     }
 
-    // Check if current tile lines up with the front
-    // also rotate/flip the tile to make the lined up line to
-    // be the top of tile, as we grew to bottum
-    fn line_up(&self, s: &[char]) -> Option<Grid<char>> {
-        //println!("checking string {:?} with tile {}", s, self.id);
-        let top: Vec<char> = self.grid.row_iter(0).cloned().collect();
-        let buttom: Vec<char> = self.grid.row_iter(self.degree() - 1).cloned().collect();
-        let left: Vec<char> = self.grid.column_iter(0).cloned().collect();
-        let right: Vec<char> = self.grid.column_iter(self.degree() - 1).cloned().collect();
-        //println!(
-        //    "borders of tile are top {:?}\nbuttom {:?}\nleft {:?}\nright {:?}",
-        //    top, buttom, left, right
-        //);
-        let mut s = s.to_owned();
-        if s == top {
-            //println!("s {:?} matches with top {:?}", s, top);
-            return Some(self.grid().to_owned());
-        } else if s == buttom {
-            //println!("s {:?} matches with buttom {:?}", s, buttom);
-            return Some(self.grid().flip_vertically());
-        } else if s == left {
-            //println!("s {:?} matches with left {:?}", s, left);
-            return Some(self.grid().transpose());
-        } else if s == right {
-            //println!("s {:?} matches with right {:?}", s, right);
-            return Some(self.grid().rotate_ccw());
-        }
-        s.reverse();
-        //println!("s reversed is {:?} ", s);
-        if s == top {
-            return Some(self.grid().flip_horizontally());
-        } else if s == buttom {
-            return Some(self.grid().flip_horizontally().flip_vertically());
-        } else if s == left {
-            return Some(self.grid().rotate_cw());
-        } else if s == right {
-            return Some(self.grid().rotate_ccw().flip_horizontally());
-        }
-        None
-    }
 
-    //DOING: Build from line pool
+    // Build from line pool
     fn from_line(l_pool: &mut HashSet<LINE>, num: usize) -> Self {
+        let base_line = l_pool.iter().next().unwrap(); // randomly pick an element from the pool to start filling
+        let mut front_ids = (base_line.head_id(), base_line.tail_id());
+        let mut back_ids = (base_line.head_id(), base_line.tail_id());
+        let mut remove_cache: Vec<LINE> = Vec::new();
+        remove_cache.push(base_line.to_owned());
+
         let mut grid: Grid<char> = Grid::new(0, 0, [].to_vec());
-        let mut front = Vec::new();
-        let mut back = Vec::new();
-        let mut front_ids = (0, 0);
-        let mut back_ids = (0, 0);
-        let mut line_to_remove = LINE::new();
-        for _i in 0..num {
-            //println!(
-            //    "grid is {:?}, front is {:?}, the square to remove is id {}, s pool has {} squares",
-            //    grid,
-            //    front,
-            //    square_to_remove.id(),
-            //    s_pool.len()
-            //);
-            for line in l_pool.iter() {
-                if grid.height() == 0 {
-                    //println!("Init LINE with square id {}", square.id());
-                    grid = line.grid.to_owned();
-                    back = grid.row_iter(0).cloned().collect();
-                    front = grid.row_iter(grid.height() - 1).cloned().collect();
-                    front_ids = (line.head_id(), line.tail_id());
-                    back_ids = (line.head_id(), line.tail_id());
-                    line_to_remove = line.to_owned();
-                    break;
-                }
-                if let Some(l_grid) = line.line_up(&front) {
-                    //println!("line up found with square id {}", square.id());
-                    let whole_vec: Vec<char> = grid
-                        .cell_iter()
-                        .chain(l_grid.cell_iter())
-                        .cloned()
-                        .collect();
-                    grid = Grid::new(grid.width(), grid.height() + l_grid.height(), whole_vec);
-                    front = l_grid.row_iter(line.height() - 1).cloned().collect();
-                    front_ids = (line.head_id(), line.tail_id());
-                    line_to_remove = line.to_owned();
-                    break;
-                }
-            } //get to the edge of one direction
-            if line_to_remove.height() != 0 {
-                //println!("to remove square id {}", square_to_remove.id());
-                l_pool.remove(&line_to_remove);
-                line_to_remove = LINE::new();
-                continue;
-            }
-            if grid.height() < grid.width() * num {
-                //println!("start reverse line up");
-                grid.flip_vertically();
-                front = back.to_owned();
-                back_ids = front_ids;
-                for line in l_pool.iter() {
-                    if let Some(l_grid) = line.line_up(&front) {
-                        //println!("reverse line up found with square id {}", square.id());
-                        let whole_vec: Vec<char> = grid
-                            .cell_iter()
-                            .chain(l_grid.cell_iter())
-                            .cloned()
-                            .collect();
-                        //println!(
-                        //    "grid is {:?}\ns_grid is {:?}\nwhole_vec is {:?}",
-                        //    grid, s_grid, whole_vec
-                        //);
-                        grid = Grid::new(grid.width(), grid.height() + l_grid.height(), whole_vec);
-                        //println!("grid becomes {:?} afterwards", grid);
-                        front = l_grid.row_iter(grid.width() - 1).cloned().collect();
-                        front_ids = (line.head_id(), line.tail_id());
-                        line_to_remove = line.to_owned();
-                        break;
-                    }
-                }
-                if line_to_remove.height() != 0 {
-                    //println!("to remove square id {}", square_to_remove.id());
-                    l_pool.remove(&line_to_remove);
-                    line_to_remove = LINE::new();
-                    continue;
-                }
-            } // get to edge of other direction
-        }
+        let mut front :Vec<char>= Vec::new();
+        let mut back:Vec<char> = Vec::new();
+
+
+        // first try to build with one direction
+        let mut grid = fill_one_direction(
+            base_line.to_owned(),
+            &l_pool,
+            &mut remove_cache,
+            &mut front_ids,
+            &mut back_ids)
         //println!("grid becomes {:?} afterwards", grid);
         let id = front_ids.0 * front_ids.1 * back_ids.0 * back_ids.1;
         println!("ids are {:?}, {:?}", front_ids, back_ids);
@@ -187,17 +141,60 @@ impl SQUARE {
         }
     }
 
-    fn degree(&self) -> usize {
-        self.degree
-    }
-    fn grid(&self) -> &Grid<char> {
-        &self.grid
-    }
     fn id(&self) -> usize {
         self.id
     }
 }
 
+fn fill_one_direction<T:HasGrid + PartialEq + Clone>(
+    base: T,
+    pool: &HashSet<T>,
+    remove_cache: &mut Vec<T>,
+    front_ids: &mut (usize, usize),
+    back_ids: &mut (usize, usize),
+) -> Grid<char> {
+    let mut grid = base.grid().to_owned();
+    let mut front: Vec<char> = grid.row_iter(base.degree() - 1).cloned().collect();
+    let back: Vec<char> = grid.row_iter(0).cloned().collect();
+    let mut reversed = false;
+    'next_postion: loop {
+        //println!(
+        //   "grid is {:?}, front is {:?}, the square to remove is id {}, s pool has {} squares",
+        //    grid,
+        //    front,
+        //    square_to_remove.id(),
+        //    s_pool.len()
+        //);
+        for entity in pool.iter() {
+            if remove_cache.contains(entity) {
+                continue;
+            }
+            if let Some(e_grid) = entity.line_up(&front) {
+                println!("line up found with square id {}", entity.id());
+                let whole_vec: Vec<char> = grid
+                    .cell_iter()
+                    .chain(e_grid.cell_iter())
+                    .cloned()
+                    .collect();
+                grid = Grid::new(grid.width(), grid.height() + e_grid.height(), whole_vec);
+                front = e_grid.row_iter(entity.degree() - 1).cloned().collect();
+                front_ids = (entity.id(), entity.id());
+                remove_cache.push(entity.to_owned());
+                continue 'next_postion;
+            }
+        } //get to the edge of one direction
+        if !reversed {
+            reversed = true;
+            println!("start reverse line up");
+            grid = grid.flip_vertically().to_owned();
+            front = back.to_owned();
+            back_ids = front_ids;
+            continue;
+        }
+        break;
+    }
+    grid
+}
 // An one dimension combinatin of SQUAREs, could be one
 // string in orignal input file or a full x-axis generated
 // from tiles(or image if extended)
@@ -208,6 +205,36 @@ struct LINE {
     grid: Grid<char>, //content of the LINE, as 2 dimension vectors
     head_id: usize,
     tail_id: usize,
+}
+impl HasGrid for LINE{        
+    fn grid(&self) -> &Grid<char>{
+ &self.grid}
+
+    fn degree(&self) -> usize {
+        self.grid.height()
+    }
+    fn line_up(&self, s: &[char]) -> Option<Grid<char>> {
+        //println!("checking string {:?} with tile {}", s, self.id);
+        let top: Vec<char> = self.grid.row_iter(0).cloned().collect();
+        let buttom: Vec<char> = self.grid.row_iter(self.height() - 1).cloned().collect();
+        //println!(
+        //    "borders of tile are top {:?}\nbuttom {:?}\nleft {:?}\nright {:?}",
+        //    top, buttom, left, right
+        //);
+        let mut s = s.to_owned();
+        if s == top {
+            return Some(self.grid().to_owned());
+        } else if s == buttom {
+            return Some(self.grid().flip_vertically());
+        }
+        s.reverse();
+        if s == top {
+            return Some(self.grid().flip_horizontally());
+        } else if s == buttom {
+            return Some(self.grid().flip_horizontally().flip_vertically());
+        }
+        None
+    }
 }
 
 impl LINE {
@@ -232,113 +259,46 @@ impl LINE {
         self.tail_id
     }
 
-    fn line_up(&self, s: &[char]) -> Option<Grid<char>> {
-        //println!("checking string {:?} with tile {}", s, self.id);
-        let top: Vec<char> = self.grid.row_iter(0).cloned().collect();
-        let buttom: Vec<char> = self.grid.row_iter(self.height() - 1).cloned().collect();
-        //println!(
-        //    "borders of tile are top {:?}\nbuttom {:?}\nleft {:?}\nright {:?}",
-        //    top, buttom, left, right
-        //);
-        let mut s = s.to_owned();
-        if s == top {
-            //println!("s {:?} matches with top {:?}", s, top);
-            return Some(self.grid().to_owned());
-        } else if s == buttom {
-            //println!("s {:?} matches with buttom {:?}", s, buttom);
-            return Some(self.grid().flip_vertically());
-        }
-        s.reverse();
-        //println!("s reversed is {:?} ", s);
-        if s == top {
-            return Some(self.grid().flip_horizontally());
-        } else if s == buttom {
-            return Some(self.grid().flip_horizontally().flip_vertically());
-        }
-        None
-    }
+
     // Build a LINE from SQUARE pool, the first item to use is randomly picked
     fn from_square(s_pool: &mut HashSet<SQUARE>, num: usize) -> Self {
-        let mut grid: Grid<char> = Grid::new(0, 0, [].to_vec());
-        let mut front = Vec::new();
-        let mut back = Vec::new();
-        let mut square_to_remove = SQUARE::new();
-        let mut head_id = 0;
-        let mut tail_id = 0;
-        for _i in 0..num {
-            //println!(
-            //    "grid is {:?}, front is {:?}, the square to remove is id {}, s pool has {} squares",
-            //    grid,
-            //    front,
-            //    square_to_remove.id(),
-            //    s_pool.len()
-            //);
-            for square in s_pool.iter() {
-                if grid.height() == 0 {
-                    //println!("Init LINE with square id {}", square.id());
-                    grid = square.grid.to_owned();
-                    back = grid.row_iter(0).cloned().collect();
-                    front = grid.row_iter(square.degree() - 1).cloned().collect();
-                    square_to_remove = square.to_owned();
-                    head_id = square.id();
-                    tail_id = square.id();
-                    break;
-                }
-                if let Some(s_grid) = square.line_up(&front) {
-                    //println!("line up found with square id {}", square.id());
-                    let whole_vec: Vec<char> = grid
-                        .cell_iter()
-                        .chain(s_grid.cell_iter())
-                        .cloned()
-                        .collect();
-                    grid = Grid::new(grid.width(), grid.height() + s_grid.height(), whole_vec);
-                    front = s_grid.row_iter(square.degree() - 1).cloned().collect();
-                    head_id = square.id();
-                    square_to_remove = square.to_owned();
-                    break;
-                }
-            } //get to the edge of one direction
-            if square_to_remove.degree() != 0 {
-                //println!("to remove square id {}", square_to_remove.id());
-                s_pool.remove(&square_to_remove);
-                square_to_remove = SQUARE::new();
-                continue;
-            }
-            if grid.height() < grid.width() * num {
-                //println!("start reverse line up");
-                grid.flip_vertically();
-                front = back.to_owned();
-                tail_id = head_id;
-                for square in s_pool.iter() {
-                    if let Some(s_grid) = square.line_up(&front) {
-                        //println!("reverse line up found with square id {}", square.id());
-                        let whole_vec: Vec<char> = grid
-                            .cell_iter()
-                            .chain(s_grid.cell_iter())
-                            .cloned()
-                            .collect();
-                        //println!(
-                        //    "grid is {:?}\ns_grid is {:?}\nwhole_vec is {:?}",
-                        //    grid, s_grid, whole_vec
-                        //);
-                        grid = Grid::new(grid.width(), grid.height() + s_grid.height(), whole_vec);
-                        //println!("grid becomes {:?} afterwards", grid);
-                        front = s_grid.row_iter(grid.width() - 1).cloned().collect();
-                        head_id = square.id();
-                        square_to_remove = square.to_owned();
-                        break;
-                    }
-                }
-                if square_to_remove.degree() != 0 {
-                    //println!("to remove square id {}", square_to_remove.id());
-                    s_pool.remove(&square_to_remove);
-                    square_to_remove = SQUARE::new();
-                    continue;
-                }
-            } // get to edge of other direction
+        let base_square = s_pool.iter().next().unwrap(); // randomly pick an element from the pool to start filling
+        let mut head_id = base_square.id();
+        let mut tail_id = base_square.id();
+        let mut remove_cache: Vec<SQUARE> = Vec::new();
+        remove_cache.push(base_square.to_owned());
+
+        // first try to build with one direction
+        let mut grid = fill_one_direction(
+            base_square.to_owned(),
+            &s_pool,
+            &mut remove_cache,
+            &mut head_id,
+            &mut tail_id,
+        );
+
+        // if first build doesn't fit, try anohter build
+        // with base rotated, it should guranteed to succeed
+        if remove_cache.len() != num {
+            println!("wrong direction, start new scan!");
+            head_id = base_square.id();
+            tail_id = base_square.id();
+            remove_cache.clear();
+            remove_cache.push(base_square.to_owned());
+
+            grid = fill_one_direction(
+                base_square.rotate(),
+                &s_pool,
+                &mut remove_cache,
+                &mut head_id,
+                &mut tail_id,
+            );
         }
-        grid.transpose();
-        //println!("grid becomes {:?} afterwards", grid);
+        for s in remove_cache {
+            s_pool.remove(&s);
+        }
+        //println!("grid got is {:?}", grid);
+        grid = grid.transpose();
         Self {
             grid,
             head_id,
@@ -347,33 +307,6 @@ impl LINE {
     }
 }
 
-/*
-
-
-#[derive(Debug)]
-struct IMAGE {
-    x_shift: isize, // image coordinate origin related to first tile in x-axis
-    y_shift: isize, // image coordinate origin related to first tile in y-axis
-    grade: usize,   // grade of image
-    map: HashMap<(isize, isize), TILE>, // map for confirmed TILEs
-}
-
-impl IMAGE {
-    fn get_id(&self, x: isize, y: isize) -> usize {
-        println!("x is {}, y is {}", x, y);
-        self.map.get(&(x, y)).unwrap().tile_id()
-    }
-    fn get_front(&mut self, x: isize, b: &BorderDirection) -> String {
-        if self.map.is_empty() {
-            return String::from("");
-        }
-        //println!("try to get border line {:?} for {}-0", b, x);
-        self.map.get_mut(&(x, 0)).unwrap().get_border(b)
-    }
-}
-
-
-*/
 fn question2(_data: Vec<String>) -> Result<usize, &'static str> {
     Err("Cannot find second number.")
 }
@@ -396,8 +329,7 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
     for _i in 0..grade {
         l_pool.insert(LINE::from_square(&mut s_pool, grade));
     }
-    //println!("get a {} long l pool {:?}", l_pool.len(), l_pool);
-    //doing
+    println!("get a {} long l pool {:?}", l_pool.len(), l_pool);
     let image = SQUARE::from_line(&mut l_pool, grade);
     println!("image is {:?}", image);
     Ok(image.id())
