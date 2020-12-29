@@ -184,10 +184,7 @@ impl IMAGE {
     }
 }
 
-fn question2(_data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
-}
-fn question1(data: Vec<String>) -> Result<usize, &'static str> {
+fn question(data: Vec<String>) -> Result<String, &'static str> {
     let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
     for s in data {
         s_pool.insert(IMAGE::from_str(s));
@@ -200,18 +197,14 @@ fn question1(data: Vec<String>) -> Result<usize, &'static str> {
         l_pool.insert(IMAGE::from_square(&mut s_pool, grade));
     }
     let image = IMAGE::from_line(l_pool);
-    Ok(image.id())
+    Ok("".to_string())
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file_by_p()?;
     //println!("{:#?}", data);
-    match question1(data.to_owned()) {
+    match question(data) {
         Ok(x) => println!("The result for question 1 is {}", x),
-        Err(x) => eprintln!("Error processing the input data: {:?}", x),
-    };
-    match question2(data) {
-        Ok(x) => println!("The sequency from position {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
@@ -329,6 +322,7 @@ mod tests {
     ..#.......
     ..#.###...";
 
+    /*
     #[test]
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT
@@ -337,10 +331,37 @@ mod tests {
             .collect();
         assert_eq!(Ok(20899048083289), question1(data));
     }
+    */
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        static TARGET: &str = r#".#.#..#.##...#.##..#####
+###....#.#....#..#......
+##.##.###.#.#..######...
+###.#####...#.#####.#..#
+##.#....#.##.####...#.##
+...########.#....#####.#
+....#..#...##..#.#.###..
+.####...#..#.....#......
+#..#.##..#..###.#.##....
+#.####..#.####.#.#.###..
+###.#.#...#.######.#..##
+#.####....##..########.#
+##..##.#...#...#.#.#.#..
+...#..#..#.#.##..###.###
+.#.#....#.##.#...###.##.
+###.#...#..#.##.######..
+.#.#.###.##.##.#..#.##..
+.####.###.#...###.#..#.#
+..#.#..#..#.#.#.####.###
+#..####...#.#.#.###.###.
+#####..#####...###....##
+#.##..#..#...#..####...#
+.#.###..##..##..####.##.
+...###...##...#...#..###"#;
+        let data: Vec<String> = TEST_INPUT
+            .split("\n    \n")
+            .map(|s| s.trim().to_string())
+            .collect();
+        assert_eq!(Ok(TARGET.to_string()), question(data));
     }
 }
