@@ -155,14 +155,16 @@ impl IMAGE {
                 if remove_cache.contains(entity) {
                     continue;
                 }
-                if let Some(e_grid) = entity.line_up(&front) {
+                if let Some(mut e_grid) = entity.line_up(&front) {
+                    grid.remove_row(grid.height() - 1);
+                    e_grid.remove_row(0);
                     let whole_vec: Vec<char> = grid
                         .cell_iter()
                         .chain(e_grid.cell_iter())
                         .cloned()
                         .collect();
                     grid = Grid::new(grid.width(), grid.height() + e_grid.height(), whole_vec);
-                    front = e_grid.row_iter(entity.height() - 1).cloned().collect();
+                    front = e_grid.row_iter(e_grid.height() - 1).cloned().collect();
                     head_id = entity.id();
                     remove_cache.push(entity.to_owned());
                     continue 'next_postion;
@@ -182,9 +184,27 @@ impl IMAGE {
             id: tail_id * head_id,
         }
     }
+
+    fn trim(&mut self) {
+        self.grid.remove_row(self.height() - 1);
+        self.grid.remove_row(0);
+        self.grid.remove_column(self.width() - 1);
+        self.grid.remove_column(0);
+    }
 }
 
-fn question(data: Vec<String>) -> Result<String, &'static str> {
+//todo: Get the monster pattern index
+// [in]     degree of image
+// [out]    vector of indexs of all pattern postions related to first #
+fn get_monster_pattern(width: usize) -> (Vec<usize>, usize) {
+    (Vec::new(), 0)
+}
+
+//todo: Check if current postion starts a monster
+fn find_monster(pos: &usize, grid: &Grid<char>, pattern: &[usize]) -> bool {
+    true
+}
+fn question(data: Vec<String>) -> Result<usize, &'static str> {
     let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
     for s in data {
         s_pool.insert(IMAGE::from_str(s));
@@ -196,8 +216,24 @@ fn question(data: Vec<String>) -> Result<String, &'static str> {
     for _i in 0..grade {
         l_pool.insert(IMAGE::from_square(&mut s_pool, grade));
     }
-    let image = IMAGE::from_line(l_pool);
-    Ok("".to_string())
+    let mut image = IMAGE::from_line(l_pool);
+    image.trim();
+    //println!("image is {:?}", image);
+    let (pattern, num) = get_monster_pattern(image.height());
+    let grid = image.grid();
+    let mut pos = 0;
+    let mut monster = 0;
+    loop {
+        if pos >= grid.area() - 1 {
+            break;
+        }
+        if find_monster(&pos, &grid, &pattern) {
+            monster += 1;
+        }
+        pos += 1;
+    }
+    let habitat = grid.cell_iter().filter(|c| **c == '#').count() - num * monster;
+    Ok(habitat)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
@@ -334,34 +370,10 @@ mod tests {
     */
     #[test]
     fn test_question2() {
-        static TARGET: &str = r#".#.#..#.##...#.##..#####
-###....#.#....#..#......
-##.##.###.#.#..######...
-###.#####...#.#####.#..#
-##.#....#.##.####...#.##
-...########.#....#####.#
-....#..#...##..#.#.###..
-.####...#..#.....#......
-#..#.##..#..###.#.##....
-#.####..#.####.#.#.###..
-###.#.#...#.######.#..##
-#.####....##..########.#
-##..##.#...#...#.#.#.#..
-...#..#..#.#.##..###.###
-.#.#....#.##.#...###.##.
-###.#...#..#.##.######..
-.#.#.###.##.##.#..#.##..
-.####.###.#...###.#..#.#
-..#.#..#..#.#.#.####.###
-#..####...#.#.#.###.###.
-#####..#####...###....##
-#.##..#..#...#..####...#
-.#.###..##..##..####.##.
-...###...##...#...#..###"#;
         let data: Vec<String> = TEST_INPUT
             .split("\n    \n")
             .map(|s| s.trim().to_string())
             .collect();
-        assert_eq!(Ok(TARGET.to_string()), question(data));
+        assert_eq!(Ok(273), question(data));
     }
 }
