@@ -193,17 +193,59 @@ impl IMAGE {
     }
 }
 
-//todo: Get the monster pattern index
-// [in]     degree of image
-// [out]    vector of indexs of all pattern postions related to first #
-fn get_monster_pattern(width: usize) -> (Vec<usize>, usize) {
-    (Vec::new(), 0)
+// Get the monster pattern index
+// [out]    vector of Gird of all 8 pattern postions and
+//          count of # within the monster
+fn get_monster_pattern() -> (Vec<Grid<char>>, usize) {
+    const MONSTER: &str = r#"
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   "#;
+
+    let flat_str: Vec<char> = MONSTER
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| l.chars())
+        .flatten()
+        .collect();
+    let monster = Grid::new(flat_str.len() / 3, 3, flat_str);
+    let count = MONSTER.chars().filter(|c| *c == '#').count();
+    (
+        vec![
+            monster.to_owned(),
+            monster.flip_horizontally(),
+            monster.flip_vertically(),
+            monster.flip_horizontally().flip_vertically(),
+            monster.rotate_cw(),
+            monster.rotate_cw().flip_horizontally(),
+            monster.rotate_cw().flip_vertically(),
+            monster.rotate_cw().flip_horizontally().flip_vertically(),
+        ],
+        count,
+    )
 }
 
-//todo: Check if current postion starts a monster
-fn find_monster(pos: &usize, grid: &Grid<char>, pattern: &[usize]) -> bool {
+// Check if current postion starts a monster
+fn find_monster(
+    pos: &usize,
+    grid: &mut [char],
+    pattern: &[usize],
+    pattern_width: &usize,
+    image_width: &usize,
+) -> bool {
+    for offset in pattern {
+        if grid[pos + offset] != '#' {
+            return false;
+        }
+    }
+    for i in 0..3 {
+        for j in 0..*pattern_width {
+            grid[pos + i * *image_width + j] = '.';
+        }
+    }
     true
 }
+
 fn question(data: Vec<String>) -> Result<usize, &'static str> {
     let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
     for s in data {
@@ -219,20 +261,48 @@ fn question(data: Vec<String>) -> Result<usize, &'static str> {
     let mut image = IMAGE::from_line(l_pool);
     image.trim();
     //println!("image is {:?}", image);
-    let (pattern, num) = get_monster_pattern(image.height());
-    let grid = image.grid();
-    let mut pos = 0;
-    let mut monster = 0;
-    loop {
-        if pos >= grid.area() - 1 {
+    let image_width = image.width();
+    let (monsters, num) = get_monster_pattern();
+    //println!("monster pattern is {:?}, number of # is {}", pattern, num);
+
+    let mut grid: Vec<char> = image.grid().cell_iter().cloned().collect();
+
+    let mut monster_count = 0;
+    for monster in monsters {
+        if monster_count != 0 {
             break;
         }
-        if find_monster(&pos, &grid, &pattern) {
-            monster += 1;
+        let mut pos = 0;
+
+        let pattern_width = monster.width();
+        let mut pattern = Vec::new();
+        for line in 0..3 {
+            for c in monster.row_iter(line) {
+                if *c == '#' {
+                    pattern.push(pos);
+                }
+                pos += 1;
+            }
+            pos += image_width - pattern_width;
         }
-        pos += 1;
+        println!("monster pattern is {:?}", pattern);
+        pos = 0;
+        monster_count = 0;
+        loop {
+            if pos >= grid.len() - image.width() * 2 - monster.width() {
+                break;
+            }
+            if pos % image_width < (image_width - 20)
+                && find_monster(&pos, &mut grid, &pattern, &pattern_width, &image_width)
+            {
+                monster_count += 1;
+                pos += pattern_width - 1;
+            }
+            pos += 1;
+        }
+        println!("found {} monsters", monster_count);
     }
-    let habitat = grid.cell_iter().filter(|c| **c == '#').count() - num * monster;
+    let habitat = image.grid().cell_iter().filter(|c| **c == '#').count() - num * monster_count;
     Ok(habitat)
 }
 
