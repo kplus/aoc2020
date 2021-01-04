@@ -1,330 +1,316 @@
-use std::collections::{HashMap, HashSet};
+use std::cmp::PartialEq;
+use std::collections::HashSet;
 use std::error::Error;
 use std::hash::Hash;
+use std::mem::swap;
 
 // `use` trait to get functionality
 use integer_sqrt::IntegerSquareRoot;
+use simple_grid::Grid;
 
 use aoc2020::*;
 
-#[derive(PartialEq, Debug)]
-enum BorderDirection {
-    LEFT,
-    RIGHT,
-    TOP,
-    BOTTUM,
-}
-
+// We use a generic object IMAGE to represent an object
+// with pixels, it can be square or line, both the tile
+// and final image are entity of this object.(They can be
+// extended if bigger image needs to be generated from current
+// image.)
+//
+// a single pixel theoretically should be this object as
+// well, but we use native method for it
+//
 #[derive(PartialEq, Eq, Hash, Debug, Clone)]
-struct TILE {
-    id: usize,
-    horizon: Vec<String>,
-    vertical: Vec<String>,
+struct IMAGE {
+    grid: Grid<char>, //content of the square, as 2 dimension array(use Grid crate)
+    id: usize,        //ID for this IMAGE, it's the unique ID for square, or prodoct
+                      // of these IDs for generated IMAGEs
 }
 
-impl TILE {
-    // Create TILE from block strings
-    fn from_str(s: String) -> Self {
-        println!("create tile from string {:?}", s);
-        let v: Vec<&str> = s.lines().map(|s| s.trim()).collect();
-
-        let id = v[0]
-            .split(|c| c == ' ' || c == ':')
-            .nth(1)
-            .unwrap()
-            .parse::<usize>()
-            .unwrap();
-        let grade = v.len() - 1;
-        let mut horizon = Vec::new();
-        let mut vertical = Vec::new();
-        let top = v[1].to_string();
-        let bottum = v[grade].to_string();
-        let mut left = String::new();
-        let mut right = String::new();
-        for line in v.iter().skip(1) {
-            let c: Vec<char> = line.chars().collect();
-            left.push(c[0]);
-            right.push(c[grade - 1]);
-        }
-        horizon.push(left);
-        horizon.push(right);
-        vertical.push(top);
-        vertical.push(bottum);
-        TILE {
-            id,
-            horizon,
-            vertical,
-        }
+impl IMAGE {
+    fn grid(&self) -> &Grid<char> {
+        &self.grid
     }
-    /* seems we don't really need these method at moment, as we supply the right front line directly
-        //todo: Rotate TILE by multiple of 90 degrees
-        fn rotate(&mut self, angle: usize) {}
-
-        //todo: Flip TILE in horizon direction or vertical direction
-        fn flip(&mut self, horizon: bool) {}
-    */
-    fn tile_id(&self) -> usize {
+    fn height(&self) -> usize {
+        self.grid.height()
+    }
+    fn width(&self) -> usize {
+        self.grid.width()
+    }
+    fn id(&self) -> usize {
         self.id
     }
-    // we don't really care about which border is it, as long as it's on same direction
-    fn get_border(&mut self, border: &BorderDirection) -> String {
-        match border {
-            BorderDirection::LEFT | BorderDirection::RIGHT => {
-                let ret = self.horizon[0].to_owned();
-                self.horizon.remove(0);
-                ret
-            }
-            BorderDirection::TOP | BorderDirection::BOTTUM => {
-                if !self.vertical.is_empty() {
-                    let ret = self.vertical[0].to_owned();
-                    self.vertical.remove(0);
-                    ret
-                } else {
-                    let ret = self.horizon[0].to_owned();
-                    self.horizon.remove(0);
-                    ret
-                }
-            }
+
+    // rotate grid clockwise by 90 degrees
+    fn rotate(&self) -> Self {
+        Self {
+            grid: self.grid.rotate_cw(),
+            id: self.id,
         }
     }
 
     // Check if current tile lines up with the front
-    // Return opposite line if lined up or none if not line up
-    fn line_up(&mut self, s: &String) -> Option<String> {
-        println!("checking string {} with tile {}", s, self.id);
-        let mut ret = String::new();
-        if self.horizon.contains(s) {
-            if self.horizon[0] == *s {
-                ret.push_str(self.horizon[1].as_str());
-            } else {
-                ret.push_str(self.horizon[0].as_str());
-            }
-            self.horizon.clear();
-            return Some(ret);
-        } else if self.vertical.contains(s) {
-            if self.vertical[0] == *s {
-                ret.push_str(self.vertical[1].as_str());
-            } else {
-                ret.push_str(self.vertical[0].as_str());
-            }
-            self.vertical.clear();
-            return Some(ret);
+    // also rotate/flip the tile to make the lined up line to
+    // be the top of tile, as we grew to bottum
+    fn line_up(&self, s: &[char]) -> Option<Grid<char>> {
+        let top: Vec<char> = self.grid.row_iter(0).cloned().collect();
+        let buttom: Vec<char> = self.grid.row_iter(self.height() - 1).cloned().collect();
+        let left: Vec<char> = self.grid.column_iter(0).cloned().collect();
+        let right: Vec<char> = self.grid.column_iter(self.width() - 1).cloned().collect();
+        let mut s = s.to_owned();
+        if s == top {
+            return Some(self.grid().to_owned());
+        } else if s == buttom {
+            return Some(self.grid().flip_vertically());
+        } else if s == left {
+            return Some(self.grid().transpose());
+        } else if s == right {
+            return Some(self.grid().rotate_ccw());
         }
-
-        let r: String = s.chars().rev().collect();
-        println!("checking reversed string {} with tile {}", r, self.id);
-        if self.horizon.contains(&r) {
-            if self.horizon[0] == *r {
-                ret = self.horizon[1].to_owned();
-            } else {
-                ret = self.horizon[0].to_owned();
-            }
-            self.horizon.clear();
-            return Some(ret);
-        } else if self.vertical.contains(&r) {
-            if self.vertical[0] == *r {
-                ret = self.vertical[1].to_owned();
-            } else {
-                ret = self.vertical[0].to_owned();
-            }
-            self.vertical.clear();
-            return Some(ret);
+        s.reverse();
+        if s == top {
+            return Some(self.grid().flip_horizontally());
+        } else if s == buttom {
+            return Some(self.grid().flip_horizontally().flip_vertically());
+        } else if s == left {
+            return Some(self.grid().rotate_cw());
+        } else if s == right {
+            return Some(self.grid().rotate_ccw().flip_horizontally());
         }
         None
     }
-}
 
-#[derive(Debug)]
-struct IMAGE {
-    x_shift: isize, // image coordinate origin related to first tile in x-axis
-    y_shift: isize, // image coordinate origin related to first tile in y-axis
-    grade: usize,   // grade of image
-    map: HashMap<(isize, isize), TILE>, // map for confirmed TILEs
-}
+    // Build from initial input block string
+    // Will create a square object
+    fn from_str(s: String) -> Self {
+        //   let mut front = Vec::new();
+        //   let mut back = Vec::new();
+        let st: Vec<&str> = s.split(':').collect();
+        let id = st[0]
+            .split_whitespace()
+            .nth(1)
+            .unwrap()
+            .parse::<usize>()
+            .unwrap();
+        let content: Vec<char> = st[1].chars().filter(|s| !s.is_whitespace()).collect();
+        let degree = content.len().integer_sqrt();
+        let grid = Grid::new(degree, degree, content);
 
-impl IMAGE {
-    //todo: Initialization of Image
-    fn new(grade: usize) -> Self {
-        IMAGE {
-            x_shift: 0,
-            y_shift: 0,
-            grade,
-            map: HashMap::new(),
+        Self { grid, id }
+    }
+
+    // Build from line pool
+    // Will create a square object
+    fn from_line(l_pool: HashSet<IMAGE>) -> Self {
+        let base_line = l_pool.iter().next().unwrap(); // randomly pick an element from the pool to start filling
+        let mut remove_cache: Vec<IMAGE> = Vec::new();
+        remove_cache.push(base_line.to_owned());
+
+        // lines can only build up in one direction
+        Self::fill_one_direction(base_line.to_owned(), &l_pool, &mut remove_cache)
+    }
+
+    // Build a line from square pool, the first item to use is randomly picked
+    // It's possible a wrong direction was picked at first, if so, the cached
+    // grid and square_to_remove will be dropped, and re-run the building with
+    // the square rotated.
+    fn from_square(s_pool: &mut HashSet<IMAGE>, num: usize) -> Self {
+        let base_square = s_pool.iter().next().unwrap(); // randomly pick an element from the pool to start filling
+        let mut remove_cache: Vec<IMAGE> = Vec::new();
+        remove_cache.push(base_square.to_owned());
+
+        // first try to build with one direction
+        let mut line =
+            IMAGE::fill_one_direction(base_square.to_owned(), &s_pool, &mut remove_cache);
+
+        // if first build doesn't fit, try anohter build
+        // with base rotated, it should guranteed to succeed
+        if remove_cache.len() != num {
+            remove_cache.clear();
+            remove_cache.push(base_square.to_owned());
+
+            line = IMAGE::fill_one_direction(base_square.rotate(), &s_pool, &mut remove_cache);
         }
-    }
-
-    fn get_end(&self, b: &BorderDirection) -> isize {
-        match b {
-            BorderDirection::LEFT => self.x_shift,
-            BorderDirection::RIGHT => self.grade as isize + self.x_shift - 1,
-            BorderDirection::TOP => self.grade as isize + self.y_shift - 1,
-            BorderDirection::BOTTUM => self.y_shift,
+        for s in remove_cache {
+            s_pool.remove(&s);
         }
-    }
-    fn set_range(&mut self, end: isize, b: &BorderDirection) {
-        match b {
-            BorderDirection::RIGHT => self.x_shift = end + 1 - self.grade as isize,
-            BorderDirection::TOP => self.y_shift = end + 1 - self.grade as isize,
-            _ => {}
-        };
-        //println!(
-        //    "passed in end is {}, x shift set to {}, y shift set to {}",
-        //    end, self.x_shift, self.y_shift
-        //);
-    }
-    fn get_id(&self, x: isize, y: isize) -> usize {
-        println!("x is {}, y is {}", x, y);
-        self.map.get(&(x, y)).unwrap().tile_id()
-    }
-    fn get_front(&mut self, x: isize, b: &BorderDirection) -> String {
-        if self.map.is_empty() {
-            return String::from("");
-        }
-        //println!("try to get border line {:?} for {}-0", b, x);
-        self.map.get_mut(&(x, 0)).unwrap().get_border(b)
+        //println!("grid got is {:?}", grid);
+        let grid = line.grid().transpose();
+        let id = line.id();
+        Self { grid, id }
     }
 
-    fn store(&mut self, tile: TILE, x: isize, i: isize, b: &BorderDirection) {
-        if *b == BorderDirection::LEFT || *b == BorderDirection::RIGHT {
-            self.map.insert((i, 0), tile);
-        } else {
-            self.map.insert((x, i), tile);
-        }
-    }
-
-    fn map_is_empty(&self) -> bool {
-        self.map.is_empty()
-    }
-}
-fn question2(data: Vec<String>) -> Result<usize, &'static str> {
-    Err("Cannot find second number.")
-}
-
-// Fill remain TILEs in given dimension
-// This is done by go through one direction until the edge,
-// and go reverse from starting point to edge on the other end
-fn fill_one_direction(
-    tiles_pool: &mut HashSet<TILE>,
-    image: &mut IMAGE,
-    direction: BorderDirection,
-    x: isize,
-) {
-    let end = image.get_end(&direction);
-    //println!("end is {}, x is {}", end, x);
-    let mut front = image.get_front(x, &direction);
-    //println!("front is {:?}", front);
-
-    for i in 0..=end.abs() {
-        let mut index = i;
-        if end < 0 {
-            index *= -1;
-        }
-        //println!("now at postion {}, front is {:?}", index, front);
-        let mut added_new_tile = false;
-        for tile in tiles_pool.iter().cloned() {
-            if image.map_is_empty() {
-                // println!("put first tile in");
-                image.store(tile.to_owned(), 0, 0, &direction);
-                added_new_tile = true;
-                front = image.get_front(0, &direction);
-                tiles_pool.remove(&tile);
-                break;
-            }
-            if i == 0 {
-                added_new_tile = true;
-                break;
-            }
-            let mut tile_change = tile.to_owned();
-            match tile_change.line_up(&front) {
-                Some(f) => {
-                    //println!(
-                    //    "line up found, update front to {:?}, tile stored to {} - {}",
-                    //    f, x, index
-                    // );
-                    front = f;
-                    image.store(tile_change, x, index, &direction);
-                    added_new_tile = true;
-                    tiles_pool.remove(&tile);
-                    // println!("i is {} at end of filling cycle", index);
-                    break;
-                } // break into next position in the image
-                None => {
-                    //println!("no line up found, move to next tile");
+    fn fill_one_direction(
+        base: IMAGE,
+        pool: &HashSet<IMAGE>,
+        remove_cache: &mut Vec<IMAGE>,
+    ) -> IMAGE {
+        let mut head_id = base.id();
+        let mut tail_id = base.id();
+        let mut grid = base.grid().to_owned();
+        let mut front: Vec<char> = grid.row_iter(base.height() - 1).cloned().collect();
+        let back: Vec<char> = grid.row_iter(0).cloned().collect();
+        let mut reversed = false;
+        'next_postion: loop {
+            for entity in pool.iter() {
+                if remove_cache.contains(entity) {
+                    continue;
                 }
+                if let Some(mut e_grid) = entity.line_up(&front) {
+                    grid.remove_row(grid.height() - 1);
+                    e_grid.remove_row(0);
+                    let whole_vec: Vec<char> = grid
+                        .cell_iter()
+                        .chain(e_grid.cell_iter())
+                        .cloned()
+                        .collect();
+                    grid = Grid::new(grid.width(), grid.height() + e_grid.height(), whole_vec);
+                    front = e_grid.row_iter(e_grid.height() - 1).cloned().collect();
+                    head_id = entity.id();
+                    remove_cache.push(entity.to_owned());
+                    continue 'next_postion;
+                }
+            } //get to the edge of one direction
+            if !reversed {
+                reversed = true;
+                grid = grid.flip_vertically().to_owned();
+                front = back.to_owned();
+                swap(&mut head_id, &mut tail_id);
+                continue;
             }
-        }
-        if !added_new_tile {
-            image.set_range(index - 1, &direction);
             break;
         }
-        image.set_range(index, &direction);
-    }
-}
-
-fn question1(data: Vec<String>) -> Result<usize, &'static str> {
-    let mut product = 1;
-    let mut tiles_pool = HashSet::new();
-    for s in data {
-        tiles_pool.insert(TILE::from_str(s));
-    }
-    println!(
-        "the tiles pool is {:#?}, the length is {}",
-        tiles_pool,
-        tiles_pool.len()
-    );
-
-    let grade = tiles_pool.len().integer_sqrt();
-    //println!("grade is {}", grade);
-    let mut image = IMAGE::new(grade);
-
-    fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::RIGHT, 0);
-    let x_start = image.get_end(&BorderDirection::LEFT);
-    //println!("x start is {}", x_start);
-    if x_start < 0 {
-        // if there is a shift
-        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::LEFT, 0);
-    }
-    let x_end = grade as isize + x_start - 1;
-    println!("x start is {}, end is {}", x_start, x_end);
-    for i in x_start..=x_end {
-        println!("start filling colum {}", i);
-        fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::TOP, i);
-        let y_start = image.get_end(&BorderDirection::BOTTUM);
-        if y_start < 0 {
-            // if there is a shift
-            fill_one_direction(&mut tiles_pool, &mut image, BorderDirection::BOTTUM, i);
+        IMAGE {
+            grid,
+            id: tail_id * head_id,
         }
     }
 
-    println!("The tile pool is {:#?}, image is {:#?}", tiles_pool, image);
-    let y_start = image.get_end(&BorderDirection::BOTTUM);
-    let y_end = grade as isize + y_start - 1;
-    println!(
-        "image range is from x {} - {}, y {} - {}",
-        x_start, x_end, y_start, y_end
-    );
-    for (x, y) in [
-        (x_start, y_start),
-        (x_end, y_start),
-        (x_start, y_end),
-        (x_end, y_end),
-    ]
-    .iter()
-    {
-        product *= image.get_id(*x, *y);
+    fn trim(&mut self) {
+        self.grid.remove_row(self.height() - 1);
+        self.grid.remove_row(0);
+        self.grid.remove_column(self.width() - 1);
+        self.grid.remove_column(0);
     }
-    Ok(product)
+}
+
+// Get the monster pattern index
+// [out]    vector of Gird of all 8 pattern postions and
+//          count of # within the monster
+fn get_monster_pattern() -> (Vec<Grid<char>>, usize) {
+    const MONSTER: &str = r#"
+                  # 
+#    ##    ##    ###
+ #  #  #  #  #  #   "#;
+
+    let flat_str: Vec<char> = MONSTER
+        .lines()
+        .filter(|l| !l.is_empty())
+        .map(|l| l.chars())
+        .flatten()
+        .collect();
+    let monster = Grid::new(flat_str.len() / 3, 3, flat_str);
+    let count = MONSTER.chars().filter(|c| *c == '#').count();
+    (
+        vec![
+            monster.to_owned(),
+            monster.flip_horizontally(),
+            monster.flip_vertically(),
+            monster.flip_horizontally().flip_vertically(),
+            monster.rotate_cw(),
+            monster.rotate_cw().flip_horizontally(),
+            monster.rotate_cw().flip_vertically(),
+            monster.rotate_cw().flip_horizontally().flip_vertically(),
+        ],
+        count,
+    )
+}
+
+// Check if current postion starts a monster
+fn find_monster(
+    pos: &usize,
+    grid: &mut [char],
+    pattern: &[usize],
+    pattern_width: &usize,
+    image_width: &usize,
+) -> bool {
+    for offset in pattern {
+        if grid[pos + offset] != '#' {
+            return false;
+        }
+    }
+    for i in 0..3 {
+        for j in 0..*pattern_width {
+            grid[pos + i * *image_width + j] = '.';
+        }
+    }
+    true
+}
+
+fn question(data: Vec<String>) -> Result<usize, &'static str> {
+    let mut s_pool = HashSet::new(); // SQUARE pool, in this case it contains tiles
+    for s in data {
+        s_pool.insert(IMAGE::from_str(s));
+    }
+
+    let grade = s_pool.len().integer_sqrt();
+
+    let mut l_pool = HashSet::new(); // LINE pool, store the LINEs generated from the SQUARE pool
+    for _i in 0..grade {
+        l_pool.insert(IMAGE::from_square(&mut s_pool, grade));
+    }
+    let mut image = IMAGE::from_line(l_pool);
+    image.trim();
+    //println!("image is {:?}", image);
+    let image_width = image.width();
+    let (monsters, num) = get_monster_pattern();
+    //println!("monster pattern is {:?}, number of # is {}", pattern, num);
+
+    let mut grid: Vec<char> = image.grid().cell_iter().cloned().collect();
+
+    let mut monster_count = 0;
+    for monster in monsters {
+        if monster_count != 0 {
+            break;
+        }
+        let mut pos = 0;
+
+        let pattern_width = monster.width();
+        let mut pattern = Vec::new();
+        for line in 0..3 {
+            for c in monster.row_iter(line) {
+                if *c == '#' {
+                    pattern.push(pos);
+                }
+                pos += 1;
+            }
+            pos += image_width - pattern_width;
+        }
+        println!("monster pattern is {:?}", pattern);
+        pos = 0;
+        monster_count = 0;
+        loop {
+            if pos >= grid.len() - image.width() * 2 - monster.width() {
+                break;
+            }
+            if pos % image_width < (image_width - 20)
+                && find_monster(&pos, &mut grid, &pattern, &pattern_width, &image_width)
+            {
+                monster_count += 1;
+                pos += pattern_width - 1;
+            }
+            pos += 1;
+        }
+        println!("found {} monsters", monster_count);
+    }
+    let habitat = image.grid().cell_iter().filter(|c| **c == '#').count() - num * monster_count;
+    Ok(habitat)
 }
 
 fn main() -> Result<(), Box<dyn Error>> {
     let data = load_file_by_p()?;
     //println!("{:#?}", data);
-    match question1(data.to_owned()) {
+    match question(data) {
         Ok(x) => println!("The result for question 1 is {}", x),
-        Err(x) => eprintln!("Error processing the input data: {:?}", x),
-    };
-    match question2(data) {
-        Ok(x) => println!("The sequency from position {}", x),
         Err(x) => eprintln!("Error processing the input data: {:?}", x),
     };
     Ok(())
@@ -442,6 +428,7 @@ mod tests {
     ..#.......
     ..#.###...";
 
+    /*
     #[test]
     fn test_question1() {
         let data: Vec<String> = TEST_INPUT
@@ -450,10 +437,13 @@ mod tests {
             .collect();
         assert_eq!(Ok(20899048083289), question1(data));
     }
+    */
     #[test]
     fn test_question2() {
-        let data: Vec<String> = TEST_INPUT.lines().map(|s| s.trim().to_owned()).collect();
-
-        assert_eq!(Err("Cannot find second number."), question2(data));
+        let data: Vec<String> = TEST_INPUT
+            .split("\n    \n")
+            .map(|s| s.trim().to_string())
+            .collect();
+        assert_eq!(Ok(273), question(data));
     }
 }
